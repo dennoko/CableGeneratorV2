@@ -1,0 +1,26 @@
+{
+    "name": "dennokoworks.CableGeneratorV2.Tests.Editor",
+    "rootNamespace": "CableGeneratorV2Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "dennokoworks.CableGeneratorV2.Runtime",
+        "dennokoworks.CableGeneratorV2.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
+

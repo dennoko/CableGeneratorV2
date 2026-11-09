@@ -1,0 +1,19 @@
+{
+    "name": "dennokoworks.CableGeneratorV2.Editor",
+    "rootNamespace": "CableGeneratorV2Editor",
+    "references": [
+        "dennokoworks.CableGeneratorV2.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
+
