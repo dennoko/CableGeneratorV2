@@ -10,7 +10,10 @@ namespace CableGeneratorV2Editor
     {
         internal struct Candidate
         {
+            public Renderer   renderer;
             public MeshFilter meshFilter;
+            /// <summary>未ベイクの SkinnedMeshRenderer（初回ヒット判定時に現在ポーズでベイクし null に戻す）</summary>
+            public SkinnedMeshRenderer pendingSkinned;
             public Mesh       mesh;
             public Matrix4x4  worldToLocal;
             public Matrix4x4  normalMatrix;
