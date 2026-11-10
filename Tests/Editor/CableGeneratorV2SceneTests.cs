@@ -83,18 +83,18 @@ namespace CableGeneratorV2Tests
             var mid = AddAttachment(gen, 1);
             Vector3 midPos = gen.Spline[1].position;
 
-            CableGeneratorInspector.SubdivideSplineKnots(gen, CableTangentMode.AutoSmooth);
+            SplineKnotOperations.SubdivideSplineKnots(gen, CableTangentMode.AutoSmooth);
             Assert.AreEqual(5, gen.Spline.Count);
             Assert.AreEqual(2, mid.knotIndex);
             Assert.Less(Vector3.Distance(midPos, gen.Spline[mid.knotIndex].position), 1e-5f);
 
-            CableGeneratorInspector.FlipSplineDirection(gen);
+            SplineKnotOperations.FlipSplineDirection(gen);
             Assert.AreEqual(2, mid.knotIndex);
             Assert.Less(Vector3.Distance(midPos, gen.Spline[mid.knotIndex].position), 1e-5f);
 
             var end = AddAttachment(gen, 4);
             Vector3 endPos = gen.Spline[4].position;
-            CableGeneratorInspector.FlipSplineDirection(gen);
+            SplineKnotOperations.FlipSplineDirection(gen);
             Assert.AreEqual(0, end.knotIndex);
             Assert.Less(Vector3.Distance(endPos, gen.Spline[end.knotIndex].position), 1e-5f);
         }

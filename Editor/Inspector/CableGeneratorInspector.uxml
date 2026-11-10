@@ -1,0 +1,31 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- Cable Generator の Inspector（設計書 §7.2）。入口と要約だけ。作業はツールウィンドウとシーンで行う -->
+    <ui:VisualElement name="appbar" class="dennoko-appbar dennoko-appbar--compact">
+        <ui:VisualElement class="dennoko-appbar__title">
+            <ui:Label name="version-label" text="" class="dennoko-version-label" />
+            <ui:Button name="version-reload-button" class="dennoko-icon-button" />
+        </ui:VisualElement>
+        <ui:VisualElement class="dennoko-appbar__actions">
+            <ui:Button name="appbar-lang" text="EN" class="dennoko-appbar-lang" />
+            <ui:Button name="appbar-manual" class="dennoko-icon-button" />
+            <ui:Button name="appbar-settings" class="dennoko-icon-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cable-inspector-body">
+        <ui:VisualElement class="dennoko-info-row">
+            <ui:Label name="info" text="" />
+        </ui:VisualElement>
+        <uie:PropertyField binding-path="profile" label="#inspector.profile" />
+        <uie:PropertyField binding-path="radiusScale" label="#look.radius" />
+        <ui:Button name="open-window" text="#inspector.open" tooltip="#inspector.open.tip" class="dennoko-button-primary cable-inspector-open" />
+
+        <ui:VisualElement name="all-details" class="dennoko-details dennoko-details--collapsed cable-inspector-all">
+            <ui:VisualElement class="dennoko-details__header">
+                <ui:Label text="▶" class="dennoko-details__arrow" />
+                <ui:Label text="#inspector.all" class="dennoko-details__title" />
+            </ui:VisualElement>
+            <ui:VisualElement name="all-fields" class="dennoko-details__content" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

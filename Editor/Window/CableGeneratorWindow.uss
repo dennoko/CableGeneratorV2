@@ -1,0 +1,203 @@
+/* ============================================================
+   Cable Generator ウィンドウ / Inspector 固有のクラス
+   スキルの決まり: すべて .dennoko-root を前置し、色は var(--dennoko-*) だけを使う（!important は使わない）。
+   読み込み順: DennokoTheme.uss → DennokoBlocks.uss → このファイル
+   ============================================================ */
+
+/* ─── 対象カード ─────────────────────────────────────────── */
+
+.dennoko-root .cable-target-card {
+    flex-shrink: 0;
+    margin: 8px 8px 0 8px;
+    padding: 6px 8px;
+}
+
+.dennoko-root .unity-button.cable-target-pin {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.dennoko-root .cable-target-empty {
+    margin-top: 4px;
+}
+
+.dennoko-root .cable-session-guide {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+    color: var(--dennoko-text-primary);
+}
+
+/* ─── 共通 ───────────────────────────────────────────────── */
+
+.dennoko-root .unity-button.cable-row-button {
+    margin: 6px 0 2px 0;
+    min-height: 24px;
+}
+
+.dennoko-root .cable-empty {
+    margin: 6px 0;
+    -unity-text-align: middle-center;
+}
+
+.dennoko-root .cable-subsection-title {
+    margin-top: 10px;
+    margin-bottom: 2px;
+}
+
+/* ─── 配線タブ: 引き方の 2 択タイル ──────────────────────── */
+
+.dennoko-root .cable-tiles {
+    flex-direction: row;
+    margin: 2px 0 4px 0;
+}
+
+.dennoko-root .unity-button.cable-tile {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    min-height: 76px;
+    margin: 0 2px;
+    padding: 6px 4px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.dennoko-root .cable-tile__glyph {
+    font-size: 16px;
+    color: var(--dennoko-text-primary);
+}
+
+.dennoko-root .cable-tile__title {
+    margin-top: 2px;
+    -unity-font-style: bold;
+    color: var(--dennoko-text-primary);
+}
+
+.dennoko-root .cable-tile__desc {
+    margin-top: 2px;
+    font-size: 10px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    color: var(--dennoko-text-tertiary);
+}
+
+.dennoko-root .unity-button.cable-tile.dennoko-button-active .cable-tile__desc {
+    color: var(--dennoko-text-primary);
+}
+
+/* ─── 配線タブ: 制御点の一覧 ─────────────────────────────── */
+
+.dennoko-root .cable-knot-list {
+    margin: 4px 0;
+}
+
+.dennoko-root .cable-knot-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 24px;
+    padding: 1px 2px 1px 6px;
+    border-radius: 3px;
+    border-left-width: 3px;
+    border-left-color: rgba(0, 0, 0, 0);
+}
+
+.dennoko-root .cable-knot-row:hover {
+    background-color: var(--dennoko-hover-overlay);
+}
+
+.dennoko-root .cable-knot-row.cable-knot-row--selected {
+    background-color: var(--dennoko-selection-bg);
+    border-left-color: var(--dennoko-selection-border);
+}
+
+.dennoko-root .cable-knot-row__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--dennoko-text-primary);
+}
+
+.dennoko-root .cable-knot-row__modes {
+    flex-grow: 0;
+    flex-shrink: 0;
+    width: 168px;
+    margin-right: 2px;
+}
+
+/* ─── 見た目タブ: 断面プレビューとプロファイル一覧 ──────── */
+
+.dennoko-root .cable-preview {
+    height: 180px;
+}
+
+.dennoko-root .cable-profile-preview {
+    --cable-preview-line: var(--dennoko-text-primary);
+    --cable-preview-fill: var(--dennoko-selection-bg);
+}
+
+.dennoko-root .cable-profile-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 2px -2px 4px -2px;
+}
+
+.dennoko-root .unity-button.cable-profile-tile {
+    width: 76px;
+    height: 82px;
+    margin: 2px;
+    padding: 2px;
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 5px;
+}
+
+.dennoko-root .cable-profile-tile__thumb {
+    flex-grow: 1;
+}
+
+.dennoko-root .cable-profile-tile__name {
+    flex-shrink: 0;
+    font-size: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    -unity-text-align: middle-center;
+    color: var(--dennoko-text-secondary);
+}
+
+.dennoko-root .unity-button.cable-duplicate-button {
+    min-height: 26px;
+}
+
+.dennoko-root .cable-profile-inspector {
+    margin-top: 2px;
+}
+
+/* ─── 形タブ ─────────────────────────────────────────────── */
+
+.dennoko-root .cable-attach-row {
+    align-items: center;
+    margin-top: 4px;
+}
+
+/* ─── Inspector（入口だけ。§7.2） ─────────────────────────── */
+
+.dennoko-root .cable-inspector-body {
+    padding: 4px 8px 8px 8px;
+}
+
+.dennoko-root .unity-button.cable-inspector-open {
+    margin-top: 6px;
+}
+
+.dennoko-root .cable-inspector-all {
+    margin-top: 6px;
+}

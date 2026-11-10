@@ -172,7 +172,7 @@ namespace CableGeneratorV2Tests
             for (int i = 1; i <= 20; i++)
                 stroke.Add(new Vector3(1f, 0f, i / 20f));
 
-            List<int> kept = CableGeneratorInspector.SimplifyStroke(stroke, 0.01f);
+            List<int> kept = StrokeSimplifier.SimplifyStroke(stroke, 0.01f);
             // 始点・角・終点の3点に簡略化されること
             Assert.AreEqual(3, kept.Count);
             Assert.AreEqual(0, kept[0]);

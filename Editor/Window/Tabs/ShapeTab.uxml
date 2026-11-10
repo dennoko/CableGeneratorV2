@@ -1,0 +1,96 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- 形タブ — どう垂らすか、どう沿わせるか（設計書 §5.2）。ShapeTab.cs が接続する -->
+
+    <!-- 選択中の制御点（シーン・配線タブの一覧と同期） -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-card-header--row">
+            <ui:Label name="sel-title" text="" class="dennoko-section-title dennoko-card-header__title" />
+            <ui:Button name="sel-prev" tooltip="#shape.prev.tip" class="dennoko-icon-button" />
+            <ui:Button name="sel-next" tooltip="#shape.next.tip" class="dennoko-icon-button" />
+        </ui:VisualElement>
+        <ui:VisualElement name="sel-empty" class="dennoko-empty-state">
+            <ui:Label text="#shape.sel.empty" class="dennoko-empty-state__message" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="sel-single">
+            <ui:Vector3Field name="sel-position" label="#shape.position" />
+            <ui:VisualElement class="dennoko-field-row">
+                <ui:Label text="#shape.space" class="dennoko-field-row__label" />
+                <ui:VisualElement name="sel-space" class="dennoko-segmented dennoko-choice-group">
+                    <ui:Button text="#shape.space.world" />
+                    <ui:Button text="#shape.space.local" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="dennoko-field-row">
+                <ui:Label text="#shape.tangent" class="dennoko-field-row__label" />
+                <ui:VisualElement name="sel-mode" class="dennoko-segmented dennoko-choice-group">
+                    <ui:Button text="#mode.auto" tooltip="#mode.auto.tip" />
+                    <ui:Button text="#mode.smooth" tooltip="#mode.smooth.tip" />
+                    <ui:Button text="#mode.corner" tooltip="#mode.corner.tip" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Slider name="sel-length" label="#shape.length" tooltip="#shape.length.tip" low-value="0.01" high-value="3" show-input-field="true" />
+            <ui:Slider name="sel-length-in" label="#shape.lengthIn" low-value="0.01" high-value="3" show-input-field="true" />
+            <ui:Slider name="sel-length-out" label="#shape.lengthOut" low-value="0.01" high-value="3" show-input-field="true" />
+            <ui:Label name="sel-auto-hint" text="#shape.auto.hint" class="dennoko-hint" />
+            <ui:VisualElement class="dennoko-hrow">
+                <ui:Vector3Field name="sel-rotation" label="#shape.rotation" tooltip="#shape.rotation.tip" class="dennoko-col-grow" />
+                <ui:Button name="sel-rotation-reset" tooltip="#shape.rotation.reset" class="dennoko-icon-button" />
+            </ui:VisualElement>
+            <ui:Slider name="sel-sag" label="#shape.segmentSag" tooltip="#shape.segmentSag.tip" low-value="0" high-value="3" show-input-field="true" />
+            <ui:VisualElement class="dennoko-hrow cable-attach-row">
+                <ui:Label name="sel-attachments" text="" class="dennoko-hint dennoko-col-grow" />
+                <ui:Button name="sel-attach" text="#shape.attach" tooltip="#shape.attach.tip" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="sel-multi">
+            <ui:VisualElement class="dennoko-field-row">
+                <ui:Label text="#shape.tangent" class="dennoko-field-row__label" />
+                <ui:VisualElement name="sel-multi-mode" class="dennoko-segmented dennoko-choice-group">
+                    <ui:Button text="#mode.auto" tooltip="#mode.auto.tip" />
+                    <ui:Button text="#mode.smooth" tooltip="#mode.smooth.tip" />
+                    <ui:Button text="#mode.corner" tooltip="#mode.corner.tip" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label text="#shape.multi.hint" class="dennoko-hint" />
+            <ui:Button name="sel-multi-delete" text="" class="dennoko-button-secondary cable-row-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- たるみ -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-card-header--row">
+            <ui:Label text="#shape.sag" class="dennoko-section-title dennoko-card-header__title" />
+            <ui:Button name="sag-reset" tooltip="#shape.sag.reset" class="dennoko-icon-button" />
+        </ui:VisualElement>
+        <ui:Slider name="sag-all" label="#shape.sagAll" tooltip="#shape.sagAll.tip" low-value="0" high-value="3" show-input-field="true" />
+        <ui:Label name="sag-mixed" text="#shape.sag.mixed" class="dennoko-hint" />
+        <ui:VisualElement name="sag-details" class="dennoko-details dennoko-details--collapsed">
+            <ui:VisualElement class="dennoko-details__header">
+                <ui:Label text="▶" class="dennoko-details__arrow" />
+                <ui:Label text="#shape.sagDetails" class="dennoko-details__title" />
+                <ui:VisualElement name="sag-chips" class="dennoko-details__chips" />
+            </ui:VisualElement>
+            <ui:VisualElement class="dennoko-details__content">
+                <ui:VisualElement name="sag-segments" />
+                <ui:Button name="sag-insert" text="#shape.sagInsert" tooltip="#shape.sagInsert.tip" class="cable-row-button" />
+                <ui:VisualElement name="sag-adjust">
+                    <ui:Slider name="sag-drop" label="#shape.sagDrop" low-value="0" high-value="5" show-input-field="true" />
+                    <ui:Toggle name="sag-mirrored" text="#shape.sagMirrored" />
+                    <ui:Slider name="sag-handle" label="#shape.sagHandle" low-value="0.01" high-value="3" show-input-field="true" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- 床や物に沿わせる（トグル付きセクション） -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-toggle-header">
+            <ui:Toggle name="collision-toggle" binding-path="enableSurfaceCollision" text="#shape.collision" tooltip="#shape.collision.tip" class="dennoko-section-title" />
+        </ui:VisualElement>
+        <ui:VisualElement name="collision-content" class="dennoko-toggle-section__content">
+            <uie:PropertyField binding-path="collisionLayerMask" label="#shape.collisionLayers" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

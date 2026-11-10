@@ -1,0 +1,75 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- Cable Generator ツールウィンドウの枠（設計書 §4）。CableGeneratorWindow.cs が接続する。
+         上から: 標準ヘッダー → 対象（固定）→ タブ（固定）→ 作業中バナー → スクロール領域 → 出力ドック → フッター → ステータス。
+         固定の文言は #キー（CableL10n）。C# で書き換える文言には #キー を書かない -->
+
+    <!-- ───────── 標準ヘッダー（§4.1） ───────── -->
+    <ui:VisualElement name="appbar" class="dennoko-appbar">
+        <ui:VisualElement class="dennoko-appbar__title">
+            <ui:Label name="appbar-title" text="Cable Generator" class="dennoko-title" />
+            <ui:Label name="version-label" text="" class="dennoko-version-label" />
+            <ui:Button name="version-reload-button" class="dennoko-icon-button" />
+        </ui:VisualElement>
+        <ui:VisualElement class="dennoko-appbar__actions">
+            <ui:Button name="appbar-lang" text="EN" class="dennoko-appbar-lang" />
+            <ui:Button name="appbar-manual" class="dennoko-icon-button" />
+            <ui:Button name="appbar-settings" class="dennoko-icon-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- ───────── B1 対象カード（§3.2。タブより上に固定） ───────── -->
+    <ui:VisualElement name="target-card" class="dennoko-card cable-target-card">
+        <ui:VisualElement class="dennoko-target-row">
+            <uie:ObjectField name="target-field" allow-scene-objects="true" />
+            <ui:Button name="target-pin" tooltip="#target.pin.tip" class="dennoko-icon-button cable-target-pin" />
+            <ui:Button name="target-new" text="#target.new" tooltip="#target.new.tip" class="dennoko-target-row__action" />
+        </ui:VisualElement>
+        <ui:VisualElement name="target-candidates" class="dennoko-candidates" />
+        <ui:Label name="target-empty" text="#target.empty" class="dennoko-hint cable-target-empty" />
+    </ui:VisualElement>
+
+    <!-- ───────── タブ（§5） ───────── -->
+    <ui:VisualElement name="tabbar" class="dennoko-tabbar">
+        <ui:Button name="tab-wire" text="#tab.wire" class="dennoko-tab" />
+        <ui:Button name="tab-shape" text="#tab.shape" class="dennoko-tab" />
+        <ui:Button name="tab-look" text="#tab.look" class="dennoko-tab" />
+        <ui:Button name="tab-output" text="#tab.output" class="dennoko-tab" />
+    </ui:VisualElement>
+
+    <!-- ───────── B7 作業中バナー（§6.1。配線中だけ） ───────── -->
+    <ui:VisualElement name="session-banner" class="dennoko-session-banner">
+        <ui:VisualElement class="dennoko-session-dot" />
+        <ui:Label name="session-state" text="" class="dennoko-session-banner__state" />
+        <ui:Label name="session-target" text="" tooltip="#banner.target.tip" class="dennoko-session-banner__target" />
+        <ui:VisualElement class="dennoko-session-banner__hint">
+            <ui:Label name="session-guide" text="" class="dennoko-keyhint-label cable-session-guide" />
+            <ui:Label text="Esc" class="dennoko-keycap" />
+            <ui:Label text="#banner.escToEnd" class="dennoko-keyhint-label" style="margin-right: 0;" />
+        </ui:VisualElement>
+        <ui:Button name="session-end" text="#banner.end" class="dennoko-button-secondary" />
+    </ui:VisualElement>
+
+    <!-- ───────── タブの中身（ここだけが縮む） ───────── -->
+    <ui:ScrollView name="main-scroll" class="dennoko-scroll">
+        <ui:VisualElement name="tab-content" />
+    </ui:ScrollView>
+
+    <!-- ───────── 出力ドック（§5.4） ───────── -->
+    <ui:VisualElement name="output-dock" class="dennoko-output">
+        <ui:VisualElement class="dennoko-output-row">
+            <ui:Label text="#dock.folder" class="dennoko-output__label" />
+            <ui:TextField name="output-path" value="" readonly="true" class="dennoko-field-readonly" />
+            <ui:Button name="output-browse" text="#dock.browse" class="dennoko-output__action" />
+        </ui:VisualElement>
+        <ui:VisualElement class="dennoko-output-row">
+            <ui:VisualElement name="output-chips" class="dennoko-output__chips" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- ───────── フッター（主ボタンはどのタブでも「出力」の 1 つだけ） ───────── -->
+    <ui:VisualElement class="dennoko-footer dennoko-footer--joined">
+        <ui:Label name="footer-info" text="" class="dennoko-footer__info" />
+        <ui:Button name="primary-button" text="#footer.export" class="dennoko-button-primary" />
+    </ui:VisualElement>
+    <ui:Label name="status-label" text="Ready" class="dennoko-status" />
+</ui:UXML>

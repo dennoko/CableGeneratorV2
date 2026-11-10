@@ -14,6 +14,7 @@ namespace CableGeneratorV2Editor
     ///
     ///   Show(text) : モード中の OnSceneGUI から毎イベント呼ぶ（カーソル移動で追従、文字は変わったときだけ更新）
     ///   Hide()     : モード終了時に呼ぶ
+    ///   Toast()    : シーンから実行した操作の結果（S4 トースト）。カーソルの脇（無ければ下端の中央）に 4 秒
     /// </summary>
     [InitializeOnLoad]
     internal static class CableSceneGuide
@@ -27,6 +28,10 @@ namespace CableGeneratorV2Editor
         {
             public VisualElement Root;
             public Label Hint;
+            public VisualElement Toast;
+            public VisualElement ToastIcon;
+            public Label ToastText;
+            public IVisualElementScheduledItem ToastHide;
             public bool Visible;
             public Vector2 Position = new Vector2(float.NaN, float.NaN);
         }
@@ -82,6 +87,37 @@ namespace CableGeneratorV2Editor
             foreach (var hud in Huds.Values) SetVisible(hud, false);
         }
 
+        /// <summary>1 行（30 字まで）の結果。成功・失敗はアイコンの色だけで区別する（背景は塗らない）。</summary>
+        public static void Toast(string text, bool ok)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            var view = SceneView.lastActiveSceneView;
+            if (view == null) return;
+            var hud = EnsureHud(view);
+            if (hud == null) return;
+
+            DennokoIcons.SetImage(hud.ToastIcon, ok ? DennokoIcons.Success : DennokoIcons.Warning);
+            hud.ToastText.text = text;
+            if (!float.IsNaN(hud.Position.x))
+            {
+                hud.Toast.style.left = hud.Position.x;
+                hud.Toast.style.top = hud.Position.y;
+                hud.Toast.style.bottom = StyleKeyword.Auto;
+                hud.Toast.style.translate = new Translate(0, 0);
+            }
+            else
+            {
+                hud.Toast.style.left = Length.Percent(50);
+                hud.Toast.style.top = StyleKeyword.Auto;
+                hud.Toast.style.bottom = 16f;
+                hud.Toast.style.translate = new Translate(Length.Percent(-50), 0);
+            }
+            hud.Toast.style.display = DisplayStyle.Flex;
+            hud.ToastHide?.Pause();
+            hud.ToastHide = hud.Toast.schedule.Execute(() => hud.Toast.style.display = DisplayStyle.None).StartingIn(4000);
+            view.Repaint();
+        }
+
         // ─── 内部 ───────────────────────────────────────────────────────
 
         private static Hud EnsureHud(SceneView view)
@@ -102,6 +138,17 @@ namespace CableGeneratorV2Editor
 
             hud.Hint.AddToClassList("dennoko-cursor-hint");
             hud.Root.Add(hud.Hint);
+
+            hud.Toast = new VisualElement { pickingMode = PickingMode.Ignore };
+            hud.Toast.AddToClassList("dennoko-toast");
+            hud.ToastIcon = new VisualElement { pickingMode = PickingMode.Ignore };
+            hud.ToastIcon.AddToClassList("dennoko-icon");
+            hud.Toast.Add(hud.ToastIcon);
+            hud.ToastText = new Label { pickingMode = PickingMode.Ignore };
+            hud.ToastText.AddToClassList("dennoko-toast__text");
+            hud.Toast.Add(hud.ToastText);
+            hud.Toast.style.display = DisplayStyle.None;
+            hud.Root.Add(hud.Toast);
             parent.Add(hud.Root);
 
             SetVisible(hud, false, force: true);

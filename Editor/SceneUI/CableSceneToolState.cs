@@ -5,38 +5,39 @@ using CableGeneratorV2Runtime;
 namespace CableGeneratorV2Editor
 {
     /// <summary>
-    /// シーン操作 UI（S1 ツールバー）が見る対象と変更通知。
-    /// 値そのもの（モード・ノット選択・トグル）は CableGeneratorInspector / CableGenerator が持ち、
-    /// ここは「どのケーブルを操作しているか」と「表示を読み直す合図 (Changed)」だけを持つ。
+    /// シーンで操作しているケーブルと、表示を読み直す合図（Changed）。
+    ///   Target  : Hierarchy で選んでいるケーブル（Inspector が畳まれていても、ウィンドウが閉じていても追従する）
+    ///   Current : 作業中（2点配線・なぞり描画）のケーブル → なければ Target。S1 ツールバーとシーンの操作はこれを見る
+    /// 値そのもの（モード・選択・トグル）は CableSceneHandles / CableKnotSelection / CableGenerator が持つ。
     /// </summary>
     [InitializeOnLoad]
     internal static class CableSceneToolState
     {
-        /// <summary>モード・選択・トグルが変わった。ツールバーはこれで表示を読み直す。</summary>
+        /// <summary>対象・作業・選択・トグル・言語が変わった。</summary>
         public static event Action Changed;
 
-        /// <summary>今 Inspector で選ばれているケーブル。null ならツールバーを隠す。</summary>
         public static CableGenerator Target { get; private set; }
 
-        public static bool Active => Target != null;
+        public static CableGenerator Current => CableSceneHandles.WorkingCable != null ? CableSceneHandles.WorkingCable : Target;
+
+        /// <summary>S1 ツールバーを出すか（ケーブルを選んでいる・作業中）。</summary>
+        public static bool Active => Current != null;
 
         static CableSceneToolState()
         {
+            Selection.selectionChanged += RefreshTarget;
+            EditorApplication.hierarchyChanged += RefreshTarget;
             Undo.undoRedoPerformed += Raise;
+            CableL10n.Changed += Raise;
+            EditorApplication.delayCall += RefreshTarget;
         }
 
-        public static void SetTarget(CableGenerator gen)
+        static void RefreshTarget()
         {
-            if (Target == gen) return;
+            var go = Selection.activeGameObject;
+            var gen = go != null && !EditorUtility.IsPersistent(go) ? go.GetComponent<CableGenerator>() : null;
+            if (gen == Target) return;
             Target = gen;
-            Raise();
-        }
-
-        /// <summary>gen が今の対象のときだけ外す（Inspector の作り直しで新しい対象を消さないため）。</summary>
-        public static void ClearTarget(CableGenerator gen)
-        {
-            if (Target != gen && Target != null) return;
-            Target = null;
             Raise();
         }
 

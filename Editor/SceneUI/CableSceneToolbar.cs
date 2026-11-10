@@ -3,21 +3,21 @@ using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine.UIElements;
 using CableGeneratorV2Runtime;
+using static CableGeneratorV2Editor.CableL10n;
 
 namespace CableGeneratorV2Editor
 {
     /// <summary>
-    /// S1 シーンツールバー (カプセル)。CableGenerator を選んでいる間だけ表示する (ITransientOverlay)。
-    /// 既定は SceneView の左の列の下端。ユーザーが動かした位置は Unity が覚える。
-    /// 状態は持たず、CableSceneToolState.Changed（と Inspector 側の変更を拾う定期更新）で読み直す。
-    /// ボタンはアイコンのみ。名前とキーはツールチップ。旧 IMGUI の上部バーと制御点のフローティングバーを統合した。
+    /// S1 シーンツールバー (カプセル)。ケーブルを選んでいる間・作業中だけ表示する (ITransientOverlay)。
+    /// ウィンドウを閉じていても出す（設計書 §14 決定事項）。既定は SceneView の左の列の下端。
+    /// 状態は持たず、CableSceneToolState.Changed（と Inspector / ウィンドウ側の変更を拾う定期更新）で読み直す。
     /// </summary>
     [Overlay(typeof(SceneView), "CableGeneratorV2.SceneToolbar", "Cable Generator", true,
         defaultDockZone = DockZone.LeftColumn, defaultDockPosition = DockPosition.Bottom, defaultLayout = Layout.Panel)]
     internal sealed class CableSceneToolbar : Overlay, ITransientOverlay
     {
         private const string UXML_GUID = "5602fb84c67a47218a66e1cbea4a2777";   // CableSceneToolbar.uxml
-        private const long PollIntervalMs = 300;   // Inspector から変えたトグル・ポリゴン数を拾う間隔
+        private const long PollIntervalMs = 300;   // ウィンドウ / Inspector から変えたトグル・ポリゴン数を拾う間隔
 
         public bool visible => CableSceneToolState.Active;
 
@@ -32,95 +32,99 @@ namespace CableGeneratorV2Editor
         {
             const string Active = DennokoSceneUI.ActiveClass;
 
-            Button B(string name, string icon, string fallback, string tooltip, Action<CableGenerator> click)
+            Button B(string name, string icon, string fallback, Action<CableGenerator> click)
             {
-                var b = DennokoIcons.Apply(root.Q<Button>(name), icon, fallback, tooltip);
+                var b = DennokoIcons.Apply(root.Q<Button>(name), icon, fallback);
                 if (b != null)
                 {
                     b.clicked += () =>
                     {
-                        var gen = CableSceneToolState.Target;
-                        if (gen != null) click(gen);
+                        var gen = CableSceneToolState.Current;
+                        if (gen == null) return;
+                        click(gen);
+                        CableCommands.RepaintAll();
                     };
                 }
                 return b;
             }
 
-            // 配線モード
-            var pick = B("tool-pick", "d_Linked|Linked", "2", null, CableGeneratorInspector.TogglePickingMode);
-            var draw = B("tool-draw", "d_Grid.PaintTool|Grid.PaintTool", "✎", null, CableGeneratorInspector.ToggleDrawMode);
+            static void Report(CableResult r) => CableSceneGuide.Toast(r.Message, r.Ok);
 
-            // 選択中の制御点（文字の選択肢 .dennoko-choice は 3 字まで）
+            var pick = B("tool-pick", "d_Linked|Linked", "2", CableSceneHandles.TogglePicking);
+            var draw = B("tool-draw", "d_Grid.PaintTool|Grid.PaintTool", "✎", CableSceneHandles.ToggleDrawing);
+
             var modes = new[] { root.Q<Button>("mode-auto"), root.Q<Button>("mode-smooth"), root.Q<Button>("mode-corner") };
-            string[] modeTips = { "自動 (接線を自動で滑らかに)", "滑らか (接線を左右対称に手動調整)", "角 (接線を左右別々に手動調整)" };
             for (int i = 0; i < modes.Length; i++)
             {
                 int value = i;
-                modes[i].tooltip = modeTips[i];
                 modes[i].clicked += () =>
                 {
-                    var gen = CableSceneToolState.Target;
-                    if (gen != null) CableGeneratorInspector.SetSelectedKnotsMode(gen, value);
+                    var gen = CableSceneToolState.Current;
+                    if (gen == null) return;
+                    CableCommands.SetTangentMode(gen, CableKnotSelection.Sorted(gen.Spline.Count), value);
+                    CableCommands.RepaintAll();
                 };
             }
-            var snap   = B("knot-snap", "d_SceneViewSnap|SceneViewSnap", "⤓",
-                "面投影 (選択中の制御点を下方向のメッシュ表面へ)", CableGeneratorInspector.SnapSelectedKnots);
+
+            var snap = B("knot-snap", "d_SceneViewSnap|SceneViewSnap", "⤓",
+                gen => Report(CableCommands.SnapKnots(gen, CableKnotSelection.Sorted(gen.Spline.Count))));
             var attach = B("knot-attach", "d_FixedJoint Icon|FixedJoint Icon", "+",
-                "アタッチメントを追加 (制御点を 1 つ選んでいるとき)", CableGeneratorInspector.AddAttachmentToSelection);
+                gen => CableCommands.AddAttachment(gen, CableKnotSelection.Active));
             var remove = B("knot-delete", "d_TreeEditor.Trash|TreeEditor.Trash", "✕",
-                "選択中の制御点を削除 (2 点は残す)", CableGeneratorInspector.DeleteSelectedKnots);
+                gen => Report(CableCommands.DeleteKnots(gen, CableKnotSelection.Sorted(gen.Spline.Count))));
 
-            // ケーブル全体のトグル（ON は selection 色の枠。ON/OFF を文字で書かない）
-            var collision = B("toggle-collision", "d_MeshCollider Icon|MeshCollider Icon", "床",
-                "床判定 (メッシュ表面に沿わせる)", CableGeneratorInspector.ToggleSurfaceCollision);
-            var lod = B("toggle-lod", "d_LODGroup Icon|LODGroup Icon", "L",
-                "LOD (軽量化メッシュを生成)", CableGeneratorInspector.ToggleLod);
+            var collision = B("toggle-collision", "d_MeshCollider Icon|MeshCollider Icon", "床", CableCommands.ToggleSurfaceCollision);
+            var lod = B("toggle-lod", "d_LODGroup Icon|LODGroup Icon", "L", CableCommands.ToggleLod);
+            var open = B("open-window", "d_winbtn_win_max|winbtn_win_max", "⧉", gen => CableGeneratorWindow.Open(gen));
 
-            // 出力
-            var bake = B("export-bake", DennokoIcons.Save, "↓",
-                "メッシュを保存 (Bake)", CableGeneratorInspector.BakeFromToolbar);
-            var fbx  = B("export-fbx", "d_PrefabModel Icon|PrefabModel Icon", "F",
-                null, CableGeneratorInspector.ExportFbxFromToolbar);
             var count = root.Q<Label>("count");
-            count.tooltip = "ポリゴン数 (LOD 有効時は LOD0→LOD2)";
-
             var capsule = root.Q("capsule");
+            bool english = !CableL10n.English;   // 初回に必ず文言を入れる
 
             // 状態 → 表示。選択中・ON は selection 色の枠 (.dennoko-button-active)
             void Refresh()
             {
-                var gen = CableSceneToolState.Target;
+                if (english != CableL10n.English)
+                {
+                    english = CableL10n.English;
+                    CableL10n.Localize(root);
+                    snap.tooltip = Tr("s1.snap.tip");
+                    attach.tooltip = Tr("s1.attach.tip");
+                    remove.tooltip = Tr("s1.delete.tip");
+                    collision.tooltip = Tr("s1.collision.tip");
+                    lod.tooltip = Tr("s1.lod.tip");
+                    open.tooltip = Tr("s1.open.tip");
+                    count.tooltip = Tr("s1.count.tip");
+                }
+
+                var gen = CableSceneToolState.Current;
                 if (gen == null || gen.Spline == null) return;
 
-                bool picking = CableGeneratorInspector.IsPicking(gen);
-                bool drawing = CableGeneratorInspector.IsDrawing(gen);
-                bool busy    = picking || drawing;
+                bool picking = CableSceneHandles.IsPicking(gen);
+                bool drawing = CableSceneHandles.IsDrawing(gen);
+                bool busy = picking || drawing;
 
                 pick.EnableInClassList(Active, picking);
-                pick.tooltip = picking ? "2点配線を終了  Esc" : "2点配線 (始点と終点の表面をクリック)";
+                pick.tooltip = Tr(picking ? "s1.pick.end.tip" : "s1.pick.tip");
                 draw.EnableInClassList(Active, drawing);
-                draw.tooltip = drawing ? "なぞり描画を終了  Esc" : "なぞり描画 (表面をドラッグして配線)";
+                draw.tooltip = Tr(drawing ? "s1.draw.end.tip" : "s1.draw.tip");
 
-                bool hasSelection = !busy && CableGeneratorInspector.HasKnotSelection;
-                int mode = hasSelection ? CableGeneratorInspector.SelectedKnotsSimpleMode(gen) : -1;
+                var selected = CableKnotSelection.Owner == gen ? CableKnotSelection.Sorted(gen.Spline.Count) : new System.Collections.Generic.List<int>();
+                bool hasSelection = !busy && selected.Count > 0;
+                int mode = hasSelection ? CableCommands.CommonSimpleMode(gen, selected) : -1;
                 for (int i = 0; i < modes.Length; i++)
                 {
                     modes[i].SetEnabled(hasSelection);
                     modes[i].EnableInClassList(Active, mode == i);
                 }
                 snap.SetEnabled(hasSelection);
-                attach.SetEnabled(hasSelection && CableGeneratorInspector.CanAddAttachmentToSelection(gen));
-                remove.SetEnabled(!busy && CableGeneratorInspector.CanDeleteSelectedKnots(gen));
+                attach.SetEnabled(hasSelection && selected.Count == 1);
+                remove.SetEnabled(!busy && CableCommands.CanDelete(gen, selected.Count));
 
                 collision.EnableInClassList(Active, gen.enableSurfaceCollision);
                 lod.EnableInClassList(Active, gen.enableLod);
 
-                bool hasMesh = CableGeneratorInspector.HasGeneratedMesh(gen);
-                bake.SetEnabled(hasMesh);
-                fbx.SetEnabled(hasMesh);
-                fbx.tooltip = $"ボーン付き FBX を書き出す ({gen.boneCount} 本、今の形状で固定)";
-
-                string tri = CableGeneratorInspector.TriangleCountText(gen);
+                string tri = CableCommands.TriangleText(gen);
                 if (count.text != tri) count.text = tri;
             }
 

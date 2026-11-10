@@ -13,9 +13,20 @@ namespace CableGeneratorV2Editor
         [MenuItem("GameObject/Cable Generator V2/Create Cable", false, 10)]
         public static GameObject CreateCableGeneratorMenu(MenuCommand menuCommand)
         {
+            var go = CreateCable(menuCommand?.context as GameObject);
+            // 作ったらウィンドウを開いて「配線」タブから始める（設計書 §3.1）
+            CableGeneratorWindow.Open(go.GetComponent<CableGenerator>(), CableGeneratorWindow.TabWire);
+            return go;
+        }
+
+        /// <summary>
+        /// ケーブルを作る（メニュー・ウィンドウの「＋ 新規」）。parent が null ならシーン直下。
+        /// Inspector ではコンポーネントを畳んだ状態にする（Inspector は使わない体験。設計書 §7.1）。
+        /// </summary>
+        public static GameObject CreateCable(GameObject parent)
+        {
             GameObject go = new GameObject("Cable");
-            if (menuCommand != null && menuCommand.context is GameObject contextGo)
-                GameObjectUtility.SetParentAndAlign(go, contextGo);
+            if (parent != null) GameObjectUtility.SetParentAndAlign(go, parent);
 
             go.AddComponent<MeshFilter>();
             var renderer = go.AddComponent<MeshRenderer>();
@@ -27,8 +38,9 @@ namespace CableGeneratorV2Editor
             var gen = go.AddComponent<CableGenerator>();
             gen.profile = FindOrCreateDefaultProfile();
             gen.RebuildMesh();
+            UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(gen, false);
 
-            Undo.RegisterCreatedObjectUndo(go, "Create Cable Generator V2");
+            Undo.RegisterCreatedObjectUndo(go, CableL10n.Tr("undo.createCable"));
             Selection.activeGameObject = go;
             return go;
         }

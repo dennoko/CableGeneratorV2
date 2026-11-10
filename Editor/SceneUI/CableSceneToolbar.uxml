@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <!-- S1 シーンツールバー (カプセル)。CableSceneToolbar.cs が接続する。アイコンのみ。名前とキーはツールチップ。
-         ボタンは 12 個。制御点のまとまりは未選択でも消さずに無効化し、ボタンの数を変えない -->
+         制御点のまとまりは未選択でも消さずに無効化し、ボタンの数を変えない。文言は #キー（CableL10n） -->
     <ui:VisualElement name="capsule" class="dennoko-capsule">
         <!-- 配線モード -->
         <ui:VisualElement class="dennoko-segment">
@@ -9,9 +9,9 @@
         </ui:VisualElement>
         <!-- 選択中の制御点 -->
         <ui:VisualElement name="seg-knot" class="dennoko-segment">
-            <ui:Button name="mode-auto" text="自動" class="dennoko-choice" />
-            <ui:Button name="mode-smooth" text="滑らか" class="dennoko-choice" />
-            <ui:Button name="mode-corner" text="角" class="dennoko-choice" />
+            <ui:Button name="mode-auto" text="#mode.auto" tooltip="#mode.auto.tip" class="dennoko-choice" />
+            <ui:Button name="mode-smooth" text="#mode.smooth" tooltip="#mode.smooth.tip" class="dennoko-choice" />
+            <ui:Button name="mode-corner" text="#mode.corner" tooltip="#mode.corner.tip" class="dennoko-choice" />
             <ui:Button name="knot-snap" class="dennoko-icon-button" />
             <ui:Button name="knot-attach" class="dennoko-icon-button" />
             <ui:Button name="knot-delete" class="dennoko-icon-button" />
@@ -21,9 +21,8 @@
             <ui:Button name="toggle-collision" class="dennoko-icon-button" />
             <ui:Button name="toggle-lod" class="dennoko-icon-button" />
         </ui:VisualElement>
-        <!-- 出力 -->
-        <ui:Button name="export-bake" class="dennoko-icon-button" style="margin-left: 4px;" />
-        <ui:Button name="export-fbx" class="dennoko-icon-button" />
-        <ui:Label name="count" text="0△" class="dennoko-capsule__count" />
+        <!-- ウィンドウを開く（出力・プロファイルなど作業の前後に決めることはウィンドウで） -->
+        <ui:Button name="open-window" class="dennoko-icon-button" style="margin-left: 4px;" />
+        <ui:Label name="count" text="" class="dennoko-capsule__count" />
     </ui:VisualElement>
 </ui:UXML>

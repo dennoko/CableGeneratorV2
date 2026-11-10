@@ -1,0 +1,105 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- 配線タブ — どこを通すか（設計書 §5.1）。WireTab.cs が接続する -->
+
+    <!-- 引き方 -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:Label text="#wire.method" class="dennoko-section-title dennoko-card-header" />
+        <ui:VisualElement class="cable-tiles">
+            <ui:Button name="tile-pick" class="cable-tile">
+                <ui:Label text="●──●" class="cable-tile__glyph" />
+                <ui:Label text="#wire.pick" class="cable-tile__title" />
+                <ui:Label name="tile-pick-desc" text="" class="cable-tile__desc" />
+            </ui:Button>
+            <ui:Button name="tile-draw" class="cable-tile">
+                <ui:Label text="〰〰" class="cable-tile__glyph" />
+                <ui:Label text="#wire.draw" class="cable-tile__title" />
+                <ui:Label name="tile-draw-desc" text="" class="cable-tile__desc" />
+            </ui:Button>
+        </ui:VisualElement>
+        <ui:Button name="pick-restart" text="#wire.restart" tooltip="#wire.restart.tip" class="dennoko-button-secondary cable-row-button" />
+        <uie:LayerMaskField name="hit-layers" label="#wire.hitLayers" tooltip="#wire.hitLayers.tip" />
+        <ui:VisualElement name="method-details" class="dennoko-details dennoko-details--collapsed">
+            <ui:VisualElement class="dennoko-details__header">
+                <ui:Label text="▶" class="dennoko-details__arrow" />
+                <ui:Label text="#common.details" class="dennoko-details__title" />
+                <ui:VisualElement name="method-chips" class="dennoko-details__chips" />
+            </ui:VisualElement>
+            <ui:VisualElement class="dennoko-details__content">
+                <ui:Slider name="pick-tangent" label="#wire.tangentScale" tooltip="#wire.tangentScale.tip" low-value="0.1" high-value="3" show-input-field="true" />
+                <ui:FloatField name="draw-offset" label="#wire.surfaceOffset" tooltip="#wire.surfaceOffset.tip" />
+                <ui:Slider name="draw-simplify" label="#wire.simplify" tooltip="#wire.simplify.tip" low-value="0.001" high-value="0.1" show-input-field="true" />
+                <ui:Slider name="draw-spacing" label="#wire.spacing" tooltip="#wire.spacing.tip" low-value="2" high-value="20" show-input-field="true" />
+                <ui:VisualElement class="dennoko-field-row">
+                    <ui:Label text="#wire.drawKnotMode" class="dennoko-field-row__label" />
+                    <ui:VisualElement name="draw-knot-mode" class="dennoko-segmented dennoko-choice-group">
+                        <ui:Button text="#mode.auto" tooltip="#mode.auto.tip" />
+                        <ui:Button text="#mode.smooth" tooltip="#mode.smooth.tip" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- 制御点 -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-card-header--row">
+            <ui:Label text="#wire.knots" class="dennoko-section-title dennoko-card-header__title" />
+            <ui:Button name="knot-add" tooltip="#wire.knotAdd.tip" class="dennoko-icon-button" />
+            <ui:Button name="knot-flip" tooltip="#wire.knotFlip.tip" class="dennoko-icon-button" />
+            <ui:Button name="knot-even" tooltip="#wire.knotEven.tip" class="dennoko-icon-button" />
+        </ui:VisualElement>
+        <ui:Toggle name="knot-loop" text="#wire.loop" tooltip="#wire.loop.tip" />
+        <ui:VisualElement name="knot-list" class="cable-knot-list" />
+        <ui:Label name="knot-empty" text="#wire.knots.empty" class="dennoko-hint cable-empty" />
+        <ui:VisualElement name="more-details" class="dennoko-details dennoko-details--collapsed">
+            <ui:VisualElement class="dennoko-details__header">
+                <ui:Label text="▶" class="dennoko-details__arrow" />
+                <ui:Label text="#wire.more" class="dennoko-details__title" />
+                <ui:VisualElement name="more-chips" class="dennoko-details__chips" />
+            </ui:VisualElement>
+            <ui:VisualElement class="dennoko-details__content">
+                <ui:SliderInt name="divisions" label="#wire.divisions" tooltip="#wire.divisions.tip" low-value="1" high-value="32" show-input-field="true" />
+                <ui:VisualElement class="dennoko-field-row">
+                    <ui:Label text="#wire.addedMode" class="dennoko-field-row__label" />
+                    <ui:VisualElement name="added-mode" class="dennoko-segmented dennoko-choice-group">
+                        <ui:Button text="#mode.auto" tooltip="#mode.auto.tip" />
+                        <ui:Button text="#mode.smooth" tooltip="#mode.smooth.tip" />
+                        <ui:Button text="#mode.corner" tooltip="#mode.corner.tip" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="dennoko-hrow">
+                    <ui:Button name="divide" text="#wire.divide" tooltip="#wire.divide.tip" class="dennoko-col-grow" />
+                    <ui:Button name="subdivide" text="#wire.subdivide" tooltip="#wire.subdivide.tip" class="dennoko-col-grow" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- 面に吸着 -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:Label text="#wire.snap" class="dennoko-section-title dennoko-card-header" />
+        <ui:VisualElement class="dennoko-field-row">
+            <ui:Label text="#wire.direction" class="dennoko-field-row__label" />
+            <ui:VisualElement name="snap-direction" class="dennoko-segmented dennoko-choice-group">
+                <ui:Button text="#wire.dir.down" />
+                <ui:Button text="#wire.dir.up" />
+                <ui:Button text="#wire.dir.custom" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:Vector3Field name="snap-custom" label="#wire.dir.vector" />
+        <ui:FloatField name="snap-distance" label="#wire.snapDistance" tooltip="#wire.snapDistance.tip" />
+        <ui:Button name="snap-run" text="" class="cable-row-button" />
+        <ui:VisualElement name="snap-details" class="dennoko-details dennoko-details--collapsed">
+            <ui:VisualElement class="dennoko-details__header">
+                <ui:Label text="▶" class="dennoko-details__arrow" />
+                <ui:Label text="#common.details" class="dennoko-details__title" />
+                <ui:VisualElement name="snap-chips" class="dennoko-details__chips" />
+            </ui:VisualElement>
+            <ui:VisualElement class="dennoko-details__content">
+                <ui:FloatField name="snap-offset" label="#wire.surfaceOffset" tooltip="#wire.surfaceOffset.tip" />
+                <ui:Toggle name="snap-local" text="#wire.dir.local" tooltip="#wire.dir.local.tip" />
+                <uie:LayerMaskField name="snap-layers" label="#wire.hitLayers" tooltip="#wire.hitLayers.tip" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

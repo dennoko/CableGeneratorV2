@@ -9,14 +9,14 @@ namespace CableGeneratorV2Editor
     {
         public static bool SubdivideSplineKnots(CableGenerator cableGen, CableTangentMode addedKnotMode)
         {
-            CableGeneratorInspector.s_knotInitLastResult = string.Empty;
+            LastMessage = string.Empty;
             if (cableGen == null || cableGen.Spline == null) return false;
 
             var spline    = cableGen.Spline;
             int knotCount = spline.Count;
             if (knotCount < 2)
             {
-                CableGeneratorInspector.s_knotInitLastResult = "細分化には最低2つのノットが必要です。";
+                LastMessage = CableL10n.Tr("msg.subdivideNeedsTwo");
                 return false;
             }
 
@@ -46,31 +46,31 @@ namespace CableGeneratorV2Editor
             for (int i = 0; i < knotCount; i++)
                 originals[i] = spline[i];
 
-            Undo.RecordObject(cableGen, "Subdivide Cable Knots");
+            Undo.RecordObject(cableGen, CableL10n.Tr("undo.subdivide"));
             ReplaceWithInterleavedKnots(spline, originals, inserted);
 
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
 
-            CableGeneratorInspector.s_knotInitLastResult = $"ノットを細分化しました（{knotCount} → {spline.Count}）。";
+            LastMessage = CableL10n.Tr("msg.subdivided", knotCount, spline.Count);
             return true;
         }
 
         public static bool RedistributeKnotsBetweenEndpoints(CableGenerator cableGen, int divisionCount, CableTangentMode addedKnotMode)
         {
-            CableGeneratorInspector.s_knotInitLastResult = string.Empty;
+            LastMessage = string.Empty;
             if (cableGen == null || cableGen.Spline == null) return false;
 
             var spline    = cableGen.Spline;
             int knotCount = spline.Count;
             if (knotCount < 2)
             {
-                CableGeneratorInspector.s_knotInitLastResult = "ノットが不足しています。";
+                LastMessage = CableL10n.Tr("msg.notEnoughKnots");
                 return false;
             }
             if (spline.Closed)
             {
-                CableGeneratorInspector.s_knotInitLastResult = "閉じたSplineでは始点-終点の等分は使用できません。";
+                LastMessage = CableL10n.Tr("msg.divideNotForLoop");
                 return false;
             }
 
@@ -100,14 +100,14 @@ namespace CableGeneratorV2Editor
             }
             newKnots.Add(spline[knotCount - 1]);
 
-            Undo.RecordObject(cableGen, "Redistribute Cable Knots");
+            Undo.RecordObject(cableGen, CableL10n.Tr("undo.divide"));
             // 中間ノットのアタッチメントは位置比率で新しいノットに割り当てる（削除はしない）
             spline.ReplaceKnots(newKnots, false);
 
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
 
-            CableGeneratorInspector.s_knotInitLastResult = $"始点-終点を{divisionCount}分割で再配置しました（{targetKnotCount}ノット）。";
+            LastMessage = CableL10n.Tr("msg.divided", divisionCount, targetKnotCount);
             return true;
         }
 

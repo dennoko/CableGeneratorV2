@@ -1,0 +1,56 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- 見た目タブ — 断面プロファイルとメッシュ（設計書 §5.3）。LookTab.cs が接続する -->
+
+    <!-- B3 プレビュー（断面。値を変えると即時に描き直す） -->
+    <ui:VisualElement class="dennoko-card dennoko-preview-card">
+        <ui:VisualElement name="preview" class="dennoko-preview cable-preview">
+            <ui:Label name="preview-message" text="#look.preview.empty" class="dennoko-preview__message" />
+        </ui:VisualElement>
+        <ui:VisualElement class="dennoko-info-row">
+            <ui:Label name="preview-info" text="" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- プロファイル（一覧 → 複製して編集 → 設定 の順。§5.3.1） -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-card-header--row">
+            <ui:Label text="#look.profile" class="dennoko-section-title dennoko-card-header__title" />
+            <ui:Button name="profile-new" text="#look.new" tooltip="#look.new.tip" class="dennoko-button-secondary" />
+        </ui:VisualElement>
+        <ui:VisualElement name="profile-grid" class="cable-profile-grid" />
+        <ui:Button name="profile-duplicate" text="#look.duplicate" tooltip="#look.duplicate.tip" class="cable-row-button cable-duplicate-button" />
+        <ui:VisualElement class="dennoko-info-row">
+            <ui:Label name="profile-info" text="" />
+        </ui:VisualElement>
+        <ui:Label name="profile-settings-title" text="" class="dennoko-section-title cable-subsection-title" />
+        <ui:VisualElement name="profile-inspector" class="cable-profile-inspector" />
+    </ui:VisualElement>
+
+    <!-- 太さと細かさ -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-card-header--row">
+            <ui:Label text="#look.mesh" class="dennoko-section-title dennoko-card-header__title" />
+            <ui:Button name="mesh-reset" tooltip="#look.mesh.reset" class="dennoko-icon-button" />
+        </ui:VisualElement>
+        <uie:PropertyField binding-path="radiusScale" label="#look.radius" />
+        <ui:VisualElement class="dennoko-field-row">
+            <ui:Label text="#look.split" class="dennoko-field-row__label" />
+            <ui:VisualElement name="split-mode" class="dennoko-segmented dennoko-choice-group">
+                <ui:Button text="#look.split.auto" tooltip="#look.split.auto.tip" />
+                <ui:Button text="#look.split.even" tooltip="#look.split.even.tip" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <uie:PropertyField name="prop-angle" binding-path="adaptiveAngleError" label="#look.angle" />
+        <uie:PropertyField name="prop-resolution" binding-path="resolution" label="#look.resolution" />
+        <ui:VisualElement name="mesh-details" class="dennoko-details dennoko-details--collapsed">
+            <ui:VisualElement class="dennoko-details__header">
+                <ui:Label text="▶" class="dennoko-details__arrow" />
+                <ui:Label text="#common.details" class="dennoko-details__title" />
+                <ui:VisualElement name="mesh-chips" class="dennoko-details__chips" />
+            </ui:VisualElement>
+            <ui:VisualElement class="dennoko-details__content">
+                <uie:PropertyField binding-path="uvTiling" label="#look.uv" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

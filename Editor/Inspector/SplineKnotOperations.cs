@@ -12,6 +12,9 @@ namespace CableGeneratorV2Editor
         internal const float kLinearTangentDivisor = 3f;
         internal const float kMidpointTangentDivisor = 3f;
 
+        /// <summary>直前の細分化・等分の結果（画面に出す文言）。</summary>
+        internal static string LastMessage = string.Empty;
+
         public static void InsertKnotAfter(CableGenerator cableGen, int index)
         {
             if (cableGen == null || cableGen.Spline == null) return;
@@ -29,7 +32,7 @@ namespace CableGeneratorV2Editor
             var newKnot = new CableKnot(midPos,
                 new Vector3(0f, 0f, -tanLen), new Vector3(0f, 0f, tanLen), rot, CableTangentMode.AutoSmooth);
 
-            Undo.RecordObject(cableGen, "制御点を挿入");
+            Undo.RecordObject(cableGen, CableL10n.Tr("undo.insertKnot"));
 
             // 挿入元の区間 sag は半分ずつに引き継ぐかリセット
             var kA = spline[index];
@@ -38,7 +41,7 @@ namespace CableGeneratorV2Editor
 
             spline.Insert(index + 1, newKnot, CableTangentMode.AutoSmooth); // 変更通知でメッシュは再構築される
 
-            CableGeneratorInspector.SelectSingleKnot(index + 1);
+            CableKnotSelection.SelectSingle(cableGen, index + 1);
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
         }
@@ -53,7 +56,7 @@ namespace CableGeneratorV2Editor
                 return;
             }
 
-            int index = CableGeneratorInspector.s_snapKnotIndex;
+            int index = CableKnotSelection.Active;
             if (index < 0 || index >= spline.Count) index = spline.Count - 1;
 
             if (!spline.Closed && index == spline.Count - 1)
@@ -85,9 +88,9 @@ namespace CableGeneratorV2Editor
             }
             else newPos = Vector3.zero;
 
-            Undo.RecordObject(cableGen, "制御点を末尾に追加");
+            Undo.RecordObject(cableGen, CableL10n.Tr("undo.addKnot"));
             spline.Add(new CableKnot(newPos, new Vector3(0f, 0f, -0.5f), new Vector3(0f, 0f, 0.5f), Quaternion.identity, CableTangentMode.AutoSmooth));
-            CableGeneratorInspector.SelectSingleKnot(spline.Count - 1);
+            CableKnotSelection.SelectSingle(cableGen, spline.Count - 1);
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
         }
@@ -102,7 +105,7 @@ namespace CableGeneratorV2Editor
             var knots = new CableKnot[count];
             for (int i = 0; i < count; i++) knots[i] = spline[i];
 
-            Undo.RecordObject(cableGen, "スプラインの方向を反転");
+            Undo.RecordObject(cableGen, CableL10n.Tr("undo.flip"));
             var flipped = new CableKnot[count];
             var remap   = new int[count];
             for (int i = 0; i < count; i++)
@@ -118,8 +121,10 @@ namespace CableGeneratorV2Editor
             }
 
             spline.ReplaceKnots(flipped, spline.Closed, remap);
-            CableGeneratorInspector.s_snapKnotIndex = Mathf.Clamp(count - 1 - CableGeneratorInspector.s_snapKnotIndex, 0, count - 1);
-            CableGeneratorInspector.ClearKnotSelection();
+            // 選択は同じ物理位置の制御点に付いたまま（番号だけ逆順にする）
+            var flippedSelection = new List<int>();
+            foreach (int i in CableKnotSelection.Sorted(count)) flippedSelection.Add(count - 1 - i);
+            CableKnotSelection.Set(cableGen, flippedSelection, count - 1 - CableKnotSelection.Active);
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
         }
@@ -139,7 +144,7 @@ namespace CableGeneratorV2Editor
                 spline.Evaluate(t, localGravity, out positions[i], out _, out _);
             }
 
-            Undo.RecordObject(cableGen, "制御点を均等再配置");
+            Undo.RecordObject(cableGen, CableL10n.Tr("undo.redistribute"));
             for (int i = 0; i < count; i++)
             {
                 var k = spline[i];
