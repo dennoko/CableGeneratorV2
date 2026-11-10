@@ -12,7 +12,7 @@ namespace CableGeneratorV2Editor
         protected override string UxmlGuid => "e86d2f1f6d994c0dbf09edd0718e3936";   // OutputTab.uxml
 
         private VisualElement _lodContent, _legacyBones, _fbxOptions, _boneCount;
-        private Label _lodInfo, _bonesHint, _meshHint;
+        private Label _lodInfo, _bonesHint, _meshHint, _prefabHint;
         private Toggle _bones, _place;
         private Action<int> _format, _fbxLod;
 
@@ -33,9 +33,10 @@ namespace CableGeneratorV2Editor
             BindSetting(_bones, () => s.fbxIncludeBones, v => { s.fbxIncludeBones = v; Window.RefreshAll(); });
             _boneCount = Q("bone-count");
             _bonesHint = Q<Label>("bones-hint");
-            _place = Q<Toggle>("fbx-place");
+            _place = Q<Toggle>("place");
             BindSetting(_place, () => s.placeInScene, v => { s.placeInScene = v; Window.RefreshAll(); });
             _meshHint = Q<Label>("mesh-hint");
+            _prefabHint = Q<Label>("prefab-hint");
         }
 
         public override void Refresh()
@@ -54,10 +55,12 @@ namespace CableGeneratorV2Editor
                 Show(_legacyBones, CableCommands.HasLegacyBones(gen));
             }
 
-            bool fbx = s.exportFormat == 1;
+            bool mesh = s.exportFormat == 0, fbx = s.exportFormat == 1, prefab = s.exportFormat == 2;
             _format(s.exportFormat);
             Show(_fbxOptions, fbx);
-            Show(_meshHint, !fbx);
+            Show(_place, !mesh);           // メッシュ (.asset) は常にシーンに置く
+            Show(_meshHint, mesh);
+            Show(_prefabHint, prefab);
             _fbxLod(s.fbxLodTier);
             SetValueIfChanged(_bones, s.fbxIncludeBones);
             SetValueIfChanged(_place, s.placeInScene);

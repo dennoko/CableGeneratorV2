@@ -184,18 +184,95 @@ namespace CableGeneratorV2Editor
             var attachment = child.AddComponent<CableKnotAttachment>();
             attachment.knotIndex = knotIndex;
             attachment.UpdateAttachment();
-            Selection.activeGameObject = child;
+            // 選択はケーブルのまま（制御点タブのアタッチメントカードで続けて設定する。Inspector は使わない）
             return attachment;
         }
 
         /// <summary>このケーブルのアタッチメントのうち、knotIndex に付いているもの。</summary>
         public static List<CableKnotAttachment> AttachmentsOf(CableGenerator gen, int knotIndex)
         {
+            var list = AttachmentsOf(gen);
+            list.RemoveAll(a => a.knotIndex != knotIndex);
+            return list;
+        }
+
+        /// <summary>このケーブルのアタッチメントすべて（子のケーブルに付いているものは含めない）。</summary>
+        public static List<CableKnotAttachment> AttachmentsOf(CableGenerator gen)
+        {
             var list = new List<CableKnotAttachment>();
             if (gen == null) return list;
             foreach (var a in gen.GetComponentsInChildren<CableKnotAttachment>(true))
-                if (a.knotIndex == knotIndex) list.Add(a);
+                if (a.Generator == gen) list.Add(a);
             return list;
+        }
+
+        // ─── アタッチメントの調整（Inspector の CableKnotAttachmentInspector と同じ項目） ───
+
+        public static void SetAttachmentKnot(CableKnotAttachment a, int knotIndex)
+        {
+            var gen = a.Generator;
+            int last = gen != null && gen.Spline != null ? Mathf.Max(0, gen.Spline.Count - 1) : 0;
+            knotIndex = Mathf.Clamp(knotIndex, 0, last);
+            if (a.knotIndex == knotIndex) return;
+            Undo.RecordObjects(new Object[] { a, a.transform }, Tr("undo.editAttachment"));
+            a.knotIndex = knotIndex;
+            a.UpdateAttachment();
+            EditorUtility.SetDirty(a);
+        }
+
+        public static void SetAttachmentPrefab(CableKnotAttachment a, GameObject prefab)
+        {
+            if (a.prefab == prefab) return;
+            Undo.RecordObjects(new Object[] { a, a.transform }, Tr("undo.editAttachment"));
+            a.prefab = prefab;
+            a.RebuildInstance();
+            // Undo で前のモデルに戻したとき、差し替えで作ったモデルが残らないように
+            if (a.SpawnedInstance != null) Undo.RegisterCreatedObjectUndo(a.SpawnedInstance, Tr("undo.editAttachment"));
+            a.UpdateAttachment();
+            EditorUtility.SetDirty(a);
+        }
+
+        public static void SetAttachmentOffset(CableKnotAttachment a, Vector3 position, Vector3 rotation, Vector3 scale)
+        {
+            Undo.RecordObjects(new Object[] { a, a.transform }, Tr("undo.editAttachment"));
+            a.positionOffset = position;
+            a.rotationOffset = rotation;
+            a.scale = scale;
+            a.UpdateAttachment();
+            EditorUtility.SetDirty(a);
+        }
+
+        /// <summary>「アタッチメントを更新」。モデルが消えていれば作り直し、制御点の位置・向きに合わせ直す。</summary>
+        public static void RefreshAttachment(CableKnotAttachment a)
+        {
+            Undo.RecordObjects(new Object[] { a, a.transform }, Tr("undo.updateAttachment"));
+            a.RebuildInstance();
+            a.UpdateAttachment();
+            EditorUtility.SetDirty(a);
+        }
+
+        /// <summary>
+        /// アタッチメントを外す。AddAttachment で作った入れ物（Transform + アタッチメント + モデルだけ）ならオブジェクトごと消し、
+        /// ほかのコンポーネントや子があるオブジェクトでは、アタッチメントとそのモデルだけを消す。
+        /// </summary>
+        public static void RemoveAttachment(CableKnotAttachment a)
+        {
+            if (a == null) return;
+            Transform t = a.transform;
+            GameObject model = a.SpawnedInstance;
+            bool onlyModelChild = t.childCount == 0 || (t.childCount == 1 && model != null && model.transform.parent == t);
+            bool dedicated = a.GetComponents<Component>().Length == 2 && onlyModelChild;
+
+            if (dedicated)
+            {
+                Undo.DestroyObjectImmediate(a.gameObject);
+            }
+            else
+            {
+                if (model != null) Undo.DestroyObjectImmediate(model);
+                Undo.DestroyObjectImmediate(a);
+            }
+            Undo.SetCurrentGroupName(Tr("undo.removeAttachment"));
         }
 
         // ─── 旧バージョンのボーン ───────────────────────────────────────

@@ -121,7 +121,12 @@ namespace CableGeneratorV2Editor
             bool hasMesh = CableCommands.HasMesh(_target);
             _primary.SetEnabled(hasMesh);
             _primary.tooltip = _target == null ? Tr("footer.export.noTarget")
-                : hasMesh ? Tr(s.exportFormat == 0 ? "footer.export.mesh.tip" : "footer.export.fbx.tip")
+                : hasMesh ? Tr(s.exportFormat switch
+                    {
+                        0 => "footer.export.mesh.tip",
+                        2 => "footer.export.prefab.tip",
+                        _ => "footer.export.fbx.tip",
+                    })
                 : Tr("msg.noMesh");
         }
 
@@ -138,13 +143,19 @@ namespace CableGeneratorV2Editor
             void Add(string text, string tip) =>
                 _outputChips.Add(DennokoBlockUI.Chip(null, text, tip, () => SelectTab(TabOutput)));
 
-            Add(Tr(fbx ? "output.format.fbx" : "output.format.mesh"), Tr("dock.chip.format.tip"));
+            bool mesh = s.exportFormat == 0;
+            Add(Tr(s.exportFormat switch
+            {
+                0 => "output.format.mesh",
+                2 => "output.format.prefab",
+                _ => "output.format.fbx",
+            }), Tr("dock.chip.format.tip"));
             if (fbx)
             {
                 Add("LOD" + s.fbxLodTier, Tr("dock.chip.lod.tip"));
                 if (s.fbxIncludeBones) Add(Tr("dock.chip.bones", bones), Tr("dock.chip.bones.tip"));
             }
-            if (!fbx || s.placeInScene) Add(Tr("dock.chip.place"), Tr("dock.chip.place.tip"));
+            if (mesh || s.placeInScene) Add(Tr("dock.chip.place"), Tr("dock.chip.place.tip"));
         }
     }
 }

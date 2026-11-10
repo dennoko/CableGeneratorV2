@@ -251,6 +251,123 @@ namespace CableGeneratorV2Tests
                 Assert.AreEqual(1f, bw.weight0 + bw.weight1 + bw.weight2 + bw.weight3, 1e-3f);
         }
 
+        [Test]
+        public void PrefabExport_SavesLodGroupWithThreeTiers_EvenWhenLodIsOff()
+        {
+            var gen = CreateCable(4);
+            gen.enableLod = false;
+            gen.lod1ScreenHeight = 0.3f;
+            gen.lod2ScreenHeight = 0.1f;
+            gen.lodCullScreenHeight = 0.02f;
+            gen.transform.position = new Vector3(3f, 1f, -2f);
+            gen.RebuildMesh();
+
+            Assert.IsNull(CableCommands.ExportCablePrefab(gen, kTempFolder, placeInScene: false), "配置しないときはシーンに残さない");
+            Assert.IsTrue(gen.gameObject.activeSelf, "配置しないときは元ケーブルを無効化しない");
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(kTempFolder + "/TestCable_cable.prefab");
+            Assert.IsNotNull(prefab, "Prefab が保存されること");
+            Assert.AreEqual(Vector3.zero, prefab.transform.localPosition, "Prefab のルートは原点");
+
+            var lodGroup = prefab.GetComponent<LODGroup>();
+            Assert.IsNotNull(lodGroup);
+            LOD[] lods = lodGroup.GetLODs();
+            Assert.AreEqual(3, lods.Length);
+            gen.GetLodScreenHeights(out float h1, out float h2, out float hc);
+            Assert.AreEqual(h1, lods[0].screenRelativeTransitionHeight, 1e-5f);
+            Assert.AreEqual(h2, lods[1].screenRelativeTransitionHeight, 1e-5f);
+            Assert.AreEqual(hc, lods[2].screenRelativeTransitionHeight, 1e-5f);
+
+            int prevTris = int.MaxValue;
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.AreEqual(1, lods[i].renderers.Length, "LOD" + i);
+                var mesh = lods[i].renderers[0].GetComponent<MeshFilter>().sharedMesh;
+                Assert.IsNotNull(mesh, "LOD" + i + " のメッシュ");
+                Assert.IsTrue(AssetDatabase.Contains(mesh), "LOD" + i + " のメッシュはアセットとして保存されること");
+                int tris = CableCommands.TriangleCount(mesh);
+                Assert.Greater(tris, 0);
+                Assert.LessOrEqual(tris, prevTris, "LOD が進むほど軽くなること");
+                prevTris = tris;
+            }
+        }
+
+        [Test]
+        public void PrefabExport_PlaceInScene_ConnectsInstanceAndDisablesSource()
+        {
+            var gen = CreateCable(3);
+            gen.transform.position = new Vector3(1f, 2f, 3f);
+            gen.RebuildMesh();
+
+            var instance = CableCommands.ExportCablePrefab(gen, kTempFolder, placeInScene: true);
+            Assert.IsNotNull(instance);
+            created.Add(instance);
+
+            Assert.IsTrue(PrefabUtility.IsAnyPrefabInstanceRoot(instance), "Prefab のインスタンスとして配置されること");
+            AssertVector(gen.transform.position, instance.transform.position, 1e-5f, "配置位置");
+            Assert.IsFalse(gen.gameObject.activeSelf, "元ケーブルは無効化されること");
+        }
+
+        GameObject CreateModel(string name)
+        {
+            var model = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            model.name = name;
+            model.transform.position = new Vector3(0f, -50f, 0f);
+            created.Add(model);
+            return model;
+        }
+
+        [Test]
+        public void AttachmentCommands_EditLikeInspector_AndRemove()
+        {
+            var gen = CreateCable(4);
+            var att = CableCommands.AddAttachment(gen, 1);
+            Assert.AreSame(gen, att.Generator);
+            CollectionAssert.AreEqual(new[] { att }, CableCommands.AttachmentsOf(gen, 1));
+
+            CableCommands.SetAttachmentPrefab(att, CreateModel("Plug"));
+            Assert.IsNotNull(att.SpawnedInstance, "モデルを指定したら配置されること");
+
+            CableCommands.SetAttachmentKnot(att, 99);
+            Assert.AreEqual(3, att.knotIndex, "制御点番号は範囲内に収めること");
+            AssertVector(gen.transform.TransformPoint(gen.Spline[3].position), att.transform.position, 1e-4f, "付け替え先の位置");
+
+            CableCommands.SetAttachmentOffset(att, Vector3.zero, Vector3.zero, new Vector3(2f, 2f, 2f));
+            Assert.AreEqual(new Vector3(2f, 2f, 2f), att.transform.localScale);
+
+            var holder = att.gameObject;
+            CableCommands.RemoveAttachment(att);
+            Assert.IsTrue(holder == null, "AddAttachment で作った入れ物はオブジェクトごと消すこと");
+            Assert.AreEqual(0, CableCommands.AttachmentsOf(gen).Count);
+        }
+
+        [Test]
+        public void RemoveAttachment_KeepsUserObjectWithOtherComponents()
+        {
+            var gen = CreateCable(3);
+            var att = AddAttachment(gen, 0);
+            att.gameObject.AddComponent<BoxCollider>();
+
+            var holder = att.gameObject;
+            CableCommands.RemoveAttachment(att);
+            Assert.IsTrue(holder != null, "ほかのコンポーネントがあるオブジェクトは消さないこと");
+            Assert.IsNull(holder.GetComponent<CableKnotAttachment>());
+        }
+
+        [Test]
+        public void PrefabExport_IncludesAttachmentModels()
+        {
+            var gen = CreateCable(3);
+            var att = CableCommands.AddAttachment(gen, 2);
+            CableCommands.SetAttachmentPrefab(att, CreateModel("Plug"));
+
+            CableCommands.ExportCablePrefab(gen, kTempFolder, placeInScene: false);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(kTempFolder + "/TestCable_cable.prefab");
+            Assert.IsNotNull(prefab);
+            Assert.IsNotNull(FindDeep(prefab.transform, "Plug (Attachment)"), "アタッチメントのモデルが Prefab に含まれること");
+            Assert.IsNull(prefab.GetComponentInChildren<CableKnotAttachment>(true), "Prefab にはアタッチメントのコンポーネントを持ち込まない");
+        }
+
         static float FrontFacingRatio(Mesh mesh)
         {
             var v = mesh.vertices;

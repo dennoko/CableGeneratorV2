@@ -132,10 +132,18 @@
     margin-right: 2px;
 }
 
-/* ─── 見た目タブ: 断面プレビューとプロファイル一覧 ──────── */
+/* ─── ケーブルタイプタブ（旧: 見た目）: 断面プレビューとプロファイル一覧 ── */
 
 .dennoko-root .cable-preview {
     height: 180px;
+}
+
+.dennoko-root .cable-preview__canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .dennoko-root .cable-profile-preview {
@@ -181,11 +189,36 @@
     margin-top: 2px;
 }
 
-/* ─── 形タブ ─────────────────────────────────────────────── */
+/* ─── 制御点タブ（旧: 形）: アタッチメント ─────────────────── */
 
-.dennoko-root .cable-attach-row {
-    align-items: center;
+.dennoko-root .cable-chip-row {
+    flex-direction: row;
+    flex-wrap: wrap;
     margin-top: 4px;
+}
+
+.dennoko-root .cable-attachment--divided {
+    border-top-width: 1px;
+    border-top-color: var(--dennoko-outline-subtle);
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+.dennoko-root .cable-attachment__header {
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.dennoko-root .cable-attachment__name {
+    -unity-font-style: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dennoko-root .cable-attachment__subtitle {
+    font-size: 10px;
+    margin: 6px 0 2px 0;
 }
 
 /* ─── Inspector（入口だけ。§7.2） ─────────────────────────── */

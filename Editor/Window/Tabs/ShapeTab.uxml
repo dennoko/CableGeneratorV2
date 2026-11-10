@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <!-- 形タブ — どう垂らすか、どう沿わせるか（設計書 §5.2）。ShapeTab.cs が接続する -->
+    <!-- 制御点タブ — 点ごとの調整・アタッチメント・たるみ・沿わせ（設計書 §5.2）。ShapeTab.cs が接続する -->
 
     <!-- 選択中の制御点（シーン・配線タブの一覧と同期） -->
     <ui:VisualElement class="dennoko-card">
@@ -38,10 +38,6 @@
                 <ui:Button name="sel-rotation-reset" tooltip="#shape.rotation.reset" class="dennoko-icon-button" />
             </ui:VisualElement>
             <ui:Slider name="sel-sag" label="#shape.segmentSag" tooltip="#shape.segmentSag.tip" low-value="0" high-value="3" show-input-field="true" />
-            <ui:VisualElement class="dennoko-hrow cable-attach-row">
-                <ui:Label name="sel-attachments" text="" class="dennoko-hint dennoko-col-grow" />
-                <ui:Button name="sel-attach" text="#shape.attach" tooltip="#shape.attach.tip" />
-            </ui:VisualElement>
         </ui:VisualElement>
 
         <ui:VisualElement name="sel-multi">
@@ -56,6 +52,17 @@
             <ui:Label text="#shape.multi.hint" class="dennoko-hint" />
             <ui:Button name="sel-multi-delete" text="" class="dennoko-button-secondary cable-row-button" />
         </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- アタッチメント（選択中の制御点に追従させるモデル。1 件ずつ AttachmentItem.uxml を複製する） -->
+    <ui:VisualElement class="dennoko-card">
+        <ui:VisualElement class="dennoko-card-header dennoko-card-header--row">
+            <ui:Label text="#attach.title" class="dennoko-section-title dennoko-card-header__title" />
+            <ui:Button name="attach-add" text="#attach.add" tooltip="#attach.add.tip" class="dennoko-button-secondary" />
+        </ui:VisualElement>
+        <ui:Label name="attach-hint" text="" class="dennoko-hint" />
+        <ui:VisualElement name="attach-others" class="cable-chip-row" />
+        <ui:VisualElement name="attach-list" />
     </ui:VisualElement>
 
     <!-- たるみ -->

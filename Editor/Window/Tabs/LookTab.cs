@@ -30,8 +30,9 @@ namespace CableGeneratorV2Editor
         protected override void Initialize()
         {
             var host = Q("preview");
+            // 枠（.dennoko-preview）は中身を中央寄せにするので、描画面は絶対配置で枠いっぱいに広げる（幅 0 で何も描かれなくなるため）
             _preview = new ProfilePreviewElement { LineWidth = 2f, Padding = 14f };
-            _preview.style.flexGrow = 1;
+            _preview.AddToClassList("cable-preview__canvas");
             host.Insert(0, _preview);
             _previewMessage = Q<Label>("preview-message");
             _previewInfo = Q<Label>("preview-info");

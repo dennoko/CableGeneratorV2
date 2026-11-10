@@ -23,10 +23,18 @@ namespace CableGeneratorV2Editor
             if (!HasMesh(generator)) return CableResult.Fail(Tr("msg.noMesh"));
             var s = CableToolSettings.instance;
             LastExportPath = null;
-            if (s.exportFormat == 0)
-                BakeCableToSceneAndAssets(generator, s.outputFolder);   // メッシュ (.asset) はベイクしたオブジェクトをシーンに置く
-            else
-                ExportCableFbx(generator, s.outputFolder, s.fbxLodTier, s.fbxIncludeBones, s.placeInScene);
+            switch (s.exportFormat)
+            {
+                case 0:
+                    BakeCableToSceneAndAssets(generator, s.outputFolder);   // メッシュ (.asset) はベイクしたオブジェクトをシーンに置く
+                    break;
+                case 2:
+                    ExportCablePrefab(generator, s.outputFolder, s.placeInScene);
+                    break;
+                default:
+                    ExportCableFbx(generator, s.outputFolder, s.fbxLodTier, s.fbxIncludeBones, s.placeInScene);
+                    break;
+            }
 
             return LastExportPath != null
                 ? CableResult.Success(Tr("msg.saved", System.IO.Path.GetFileName(LastExportPath)))
@@ -123,6 +131,126 @@ namespace CableGeneratorV2Editor
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterials = materials;
             return mr;
+        }
+
+        // ================================================================
+        //  Prefab Export (LOD0〜2 のメッシュ + LODGroup を設定した Prefab)
+        // ================================================================
+
+        /// <summary>
+        /// LOD0〜LOD2 のメッシュを 1 つの .asset に保存し、LODGroup を設定した Prefab を書き出す。
+        /// ケーブルの「軽量化」が OFF でも LOD は必ず作る（切り替えの画面占有率はケーブルの値）。
+        /// アタッチメントは Prefab の中に含める。placeInScene のときは Prefab のインスタンスを元ケーブルの位置に置き、
+        /// 元ケーブルを無効化する。
+        /// </summary>
+        public static GameObject ExportCablePrefab(CableGenerator generator, string folderPath, bool placeInScene)
+        {
+            if (generator == null) return null;
+            if (generator.profile == null || generator.Spline == null || generator.Spline.Count < 2)
+            {
+                EditorUtility.DisplayDialog(Tr("dialog.error"), Tr("msg.fbxNeedsProfile"), "OK");
+                return null;
+            }
+
+            string folder = CableMeshExporter.ResolveOutputFolder(folderPath);
+            if (folder == null) return null;
+            CableMeshExporter.EnsureFolderExists(folder);
+
+            string prefabPath = CableMeshExporter.GenerateUniqueAssetPath(folder, generator.gameObject.name + "_cable", ".prefab");
+            string prefabName = System.IO.Path.GetFileNameWithoutExtension(prefabPath);
+            string meshPath   = CableMeshExporter.GenerateUniqueAssetPath(folder, prefabName + "_LODs");
+
+            // LOD0 を主アセット、LOD1・LOD2 をサブアセットにした 1 ファイル
+            var meshes = new Mesh[3];
+            for (int tier = 0; tier < meshes.Length; tier++)
+            {
+                var m = new Mesh { name = prefabName + "_LOD" + tier };
+                meshes[tier] = m;
+                if (!generator.BuildExportMesh(m, tier, 0, null, null) || m.vertexCount == 0)
+                {
+                    foreach (var built in meshes)
+                        if (built != null) Object.DestroyImmediate(built);
+                    EditorUtility.DisplayDialog(Tr("dialog.error"), Tr("msg.noMesh"), "OK");
+                    return null;
+                }
+            }
+            AssetDatabase.CreateAsset(meshes[0], meshPath);
+            AssetDatabase.AddObjectToAsset(meshes[1], meshes[0]);
+            AssetDatabase.AddObjectToAsset(meshes[2], meshes[0]);
+            AssetDatabase.SaveAssets();
+
+            GameObject root = BuildLodObject(generator, prefabName, meshes, recordUndo: placeInScene);
+
+            // Prefab のルート位置は原点にしておく（シーンに置くときはインスタンスの位置で上書き）
+            Vector3 placedPosition = root.transform.localPosition;
+            root.transform.localPosition = Vector3.zero;
+
+            bool saved;
+            GameObject prefabAsset = placeInScene
+                ? PrefabUtility.SaveAsPrefabAssetAndConnect(root, prefabPath, InteractionMode.AutomatedAction, out saved)
+                : PrefabUtility.SaveAsPrefabAsset(root, prefabPath, out saved);
+
+            if (!saved || prefabAsset == null)
+            {
+                Object.DestroyImmediate(root);
+                AssetDatabase.DeleteAsset(meshPath);
+                EditorUtility.DisplayDialog(Tr("dialog.error"), Tr("msg.exportFailed"), "OK");
+                return null;
+            }
+
+            Debug.Log($"[CableGenerator V2] Prefab: {prefabPath} (meshes {meshPath})");
+            LastExportPath = prefabPath;
+            EditorGUIUtility.PingObject(prefabAsset);
+
+            if (!placeInScene)
+            {
+                Object.DestroyImmediate(root);
+                return null;
+            }
+
+            root.transform.localPosition = placedPosition;
+            DisableSourceAfterBake(generator.gameObject);
+            Selection.activeGameObject = root;
+            return root;
+        }
+
+        /// <summary>LOD0 をルート、LOD1・LOD2 を子に置き、LODGroup を設定したオブジェクトを元ケーブルの隣に作る。</summary>
+        static GameObject BuildLodObject(CableGenerator generator, string name, Mesh[] meshes, bool recordUndo)
+        {
+            GameObject sourceObject = generator.gameObject;
+            var root = new GameObject(name);
+            if (recordUndo) Undo.RegisterCreatedObjectUndo(root, Tr("undo.placePrefab"));
+            PlaceNextToSource(root.transform, sourceObject.transform);
+
+            var sourceRenderer = sourceObject.GetComponent<MeshRenderer>();
+            Material[] mats = sourceRenderer != null ? sourceRenderer.sharedMaterials : new Material[0];
+
+            root.AddComponent<MeshFilter>().sharedMesh = meshes[0];
+            var r0 = root.AddComponent<MeshRenderer>();
+            r0.sharedMaterials = mats;
+            Renderer r1 = CreateBakedTierRenderer(root.transform, "LOD1", meshes[1], mats);
+            Renderer r2 = CreateBakedTierRenderer(root.transform, "LOD2", meshes[2], mats);
+            if (sourceRenderer != null)
+            {
+                foreach (var r in new[] { r0, r1, r2 })
+                {
+                    r.shadowCastingMode = sourceRenderer.shadowCastingMode;
+                    r.receiveShadows    = sourceRenderer.receiveShadows;
+                }
+            }
+
+            generator.GetLodScreenHeights(out float h1, out float h2, out float hc);
+            var lodGroup = root.AddComponent<LODGroup>();
+            lodGroup.SetLODs(new[]
+            {
+                new LOD(h1, new Renderer[] { r0 }),
+                new LOD(h2, new[] { r1 }),
+                new LOD(hc, new[] { r2 }),
+            });
+            lodGroup.RecalculateBounds();
+
+            CopyAttachments(generator, root.transform, null, recordUndo);
+            return root;
         }
 
         // ================================================================

@@ -115,6 +115,8 @@ namespace CableGeneratorV2Editor
             // 区間スライダーのラベル（番号）を対象ごとに作り直す
             _sagSegments?.Clear();
             _segmentSliders.Clear();
+            // アタッチメントの行も作り直す（ウィンドウの Unbind で変更の監視が外れるため）
+            _attachKey = null;
         }
     }
 }

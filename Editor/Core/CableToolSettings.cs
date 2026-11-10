@@ -42,7 +42,7 @@ namespace CableGeneratorV2Editor
 
         // ─── 出力 ──────────────────────────────────────────────────────
         public string outputFolder = "";           // 空なら CableMeshExporter.DefaultOutputFolder
-        public int    exportFormat = 1;            // 0 = メッシュ (.asset), 1 = FBX
+        public int    exportFormat = 1;            // 0 = メッシュ (.asset), 1 = FBX, 2 = Prefab (LOD 付き)
         public int    fbxLodTier = 0;
         public bool   fbxIncludeBones = true;
         public bool   placeInScene = true;

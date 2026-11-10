@@ -36,8 +36,10 @@ namespace CableGeneratorV2Editor
         /// <summary>
         /// アタッチされたモデルをワールド座標・スケールを維持して複製配置する。
         /// parentForKnot が指定されていればそのノットに対応する Transform（最寄りボーン等）の子にする。
+        /// recordUndo が false なら Undo に記録しない（Prefab に保存してすぐ破棄する一時オブジェクト用）。
         /// </summary>
-        static void CopyAttachments(CableGenerator generator, Transform defaultParent, System.Func<int, Transform> parentForKnot)
+        static void CopyAttachments(CableGenerator generator, Transform defaultParent, System.Func<int, Transform> parentForKnot,
+            bool recordUndo = true)
         {
             var attachments = generator.GetComponentsInChildren<CableKnotAttachment>(true);
             foreach (var attachment in attachments)
@@ -60,7 +62,7 @@ namespace CableGeneratorV2Editor
                 copy.transform.SetPositionAndRotation(spawnedTransform.position, spawnedTransform.rotation);
                 copy.transform.localScale = spawnedTransform.lossyScale;
                 copy.name = spawned.name;
-                Undo.RegisterCreatedObjectUndo(copy, Tr("undo.copyAttachment"));
+                if (recordUndo) Undo.RegisterCreatedObjectUndo(copy, Tr("undo.copyAttachment"));
 
                 Transform parent = parentForKnot?.Invoke(attachment.knotIndex) ?? defaultParent;
                 copy.transform.SetParent(parent != null ? parent : defaultParent, true);

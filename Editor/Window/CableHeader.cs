@@ -85,9 +85,11 @@ namespace CableGeneratorV2Editor
         {
             string root = CableGeneratorVersion.RootFolder();
             if (string.IsNullOrEmpty(root)) return null;
-            string first = English ? "user_manual_en.pdf" : "user_manual_ja.pdf";
-            string second = English ? "user_manual_ja.pdf" : "user_manual_en.pdf";
-            foreach (string name in new[] { first, second })
+            string firstPdf = English ? "user_manual_en.pdf" : "user_manual_ja.pdf";
+            string secondPdf = English ? "user_manual_ja.pdf" : "user_manual_en.pdf";
+            string firstMd = English ? "user_manual_en.md" : "user_manual_ja.md";
+            string secondMd = English ? "user_manual_ja.md" : "user_manual_en.md";
+            foreach (string name in new[] { firstPdf, secondPdf, firstMd, secondMd })
             {
                 string path = Path.Combine(root, "Docs", name);
                 if (File.Exists(path)) return path;

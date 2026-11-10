@@ -26,6 +26,7 @@
         <ui:VisualElement name="format" class="dennoko-segmented dennoko-choice-group">
             <ui:Button text="#output.format.mesh" tooltip="#output.format.mesh.tip" />
             <ui:Button text="#output.format.fbx" tooltip="#output.format.fbx.tip" />
+            <ui:Button text="#output.format.prefab" tooltip="#output.format.prefab.tip" />
         </ui:VisualElement>
         <ui:VisualElement name="fbx-options">
             <ui:VisualElement class="dennoko-field-row">
@@ -39,8 +40,10 @@
             <ui:Toggle name="fbx-bones" text="#output.bones" tooltip="#output.bones.tip" />
             <uie:PropertyField name="bone-count" binding-path="boneCount" label="#output.boneCount" />
             <ui:Label name="bones-hint" text="#output.bones.hint" class="dennoko-hint" />
-            <ui:Toggle name="fbx-place" text="#output.place" tooltip="#output.place.tip" />
         </ui:VisualElement>
+        <!-- FBX と Prefab のとき -->
+        <ui:Toggle name="place" text="#output.place" tooltip="#output.place.tip" />
         <ui:Label name="mesh-hint" text="#output.mesh.hint" class="dennoko-hint" />
+        <ui:Label name="prefab-hint" text="#output.prefab.hint" class="dennoko-hint" />
     </ui:VisualElement>
 </ui:UXML>

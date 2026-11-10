@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <!-- 制御点タブ「アタッチメント」カードの 1 件。ShapeTab.Attachments.cs が件数分複製して接続する。
+         項目は Inspector（CableKnotAttachmentInspector）と同じ: アタッチ設定 → トランスフォームオフセット → 更新 -->
+    <ui:VisualElement class="cable-attachment">
+        <ui:VisualElement class="dennoko-hrow cable-attachment__header">
+            <ui:Label name="att-name" text="" class="dennoko-text-primary dennoko-col-grow cable-attachment__name" />
+            <ui:Button name="att-delete" tooltip="#attach.delete.tip" class="dennoko-icon-button" />
+        </ui:VisualElement>
+
+        <!-- アタッチ設定 -->
+        <ui:IntegerField name="att-knot" label="#attach.knot" tooltip="#attach.knot.tip" />
+        <uie:ObjectField name="att-prefab" label="#attach.prefab" tooltip="#attach.prefab.tip" allow-scene-objects="false" />
+
+        <!-- トランスフォームオフセット -->
+        <ui:Label text="#attach.offset" class="dennoko-text-tertiary cable-attachment__subtitle" />
+        <ui:Vector3Field name="att-position" label="#attach.position" tooltip="#attach.position.tip" />
+        <ui:Vector3Field name="att-rotation" label="#attach.rotation" tooltip="#attach.rotation.tip" />
+        <ui:Vector3Field name="att-scale" label="#attach.scale" />
+        <ui:Button name="att-update" text="#attach.update" tooltip="#attach.update.tip" class="dennoko-button-secondary cable-row-button" />
+    </ui:VisualElement>
+</ui:UXML>

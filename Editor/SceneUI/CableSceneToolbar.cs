@@ -69,7 +69,12 @@ namespace CableGeneratorV2Editor
             var snap = B("knot-snap", "d_SceneViewSnap|SceneViewSnap", "⤓",
                 gen => Report(CableCommands.SnapKnots(gen, CableKnotSelection.Sorted(gen.Spline.Count))));
             var attach = B("knot-attach", "d_FixedJoint Icon|FixedJoint Icon", "+",
-                gen => CableCommands.AddAttachment(gen, CableKnotSelection.Active));
+                gen =>
+                {
+                    // 付けたらモデルの指定と調整はウィンドウの制御点タブで続ける
+                    CableCommands.AddAttachment(gen, CableKnotSelection.Active);
+                    CableGeneratorWindow.Open(gen, CableGeneratorWindow.TabShape);
+                });
             var remove = B("knot-delete", "d_TreeEditor.Trash|TreeEditor.Trash", "✕",
                 gen => Report(CableCommands.DeleteKnots(gen, CableKnotSelection.Sorted(gen.Spline.Count))));
 

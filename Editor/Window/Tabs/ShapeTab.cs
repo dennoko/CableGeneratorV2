@@ -8,13 +8,16 @@ using static CableGeneratorV2Editor.CableL10n;
 
 namespace CableGeneratorV2Editor
 {
-    /// <summary>形タブ — どう垂らすか、どう沿わせるか（設計書 §5.2）。たるみと床判定は ShapeTab.Sag.cs。</summary>
+    /// <summary>
+    /// 制御点タブ — 点ごとの調整（設計書 §5.2）。たるみと床判定は ShapeTab.Sag.cs、アタッチメントは ShapeTab.Attachments.cs。
+    /// クラス名は旧タブ名「形」のまま。
+    /// </summary>
     internal sealed partial class ShapeTab : CableTab
     {
         protected override string UxmlGuid => "d884f3b559d1494d8fab9bf9f81639a4";   // ShapeTab.uxml
 
-        private Label _title, _attachments, _autoHint;
-        private Button _prev, _next, _attach, _multiDelete;
+        private Label _title, _autoHint;
+        private Button _prev, _next, _multiDelete;
         private VisualElement _empty, _single, _multi;
         private Vector3Field _position, _rotation;
         private Slider _length, _lengthIn, _lengthOut, _segmentSag;
@@ -102,11 +105,10 @@ namespace CableGeneratorV2Editor
                 if (Gen != null && SingleIndex >= 0) CableCommands.SetSegmentSag(Gen, SingleIndex, v);
             });
 
-            _attachments = Q<Label>("sel-attachments");
-            _attach = OnClick("sel-attach", gen => { if (SingleIndex >= 0) CableCommands.AddAttachment(gen, SingleIndex); });
             _multiDelete = OnClick("sel-multi-delete", gen => Report(CableCommands.DeleteKnots(gen, Selected())));
 
             InitializeSag();
+            InitializeAttachments();
         }
 
         public override void Refresh()
@@ -134,6 +136,7 @@ namespace CableGeneratorV2Editor
                 _multiDelete.SetEnabled(CableCommands.CanDelete(gen, selected.Count));
             }
 
+            RefreshAttachments(gen, selected);
             RefreshSag(gen);
         }
 
@@ -161,11 +164,6 @@ namespace CableGeneratorV2Editor
             bool hasSegment = index < gen.Spline.SegmentCount;
             Show(_segmentSag, hasSegment);
             if (hasSegment) SetValueIfChanged(_segmentSag, gen.Spline.GetSegmentSag(index));
-
-            var attached = CableCommands.AttachmentsOf(gen, index);
-            var names = new List<string>();
-            foreach (var a in attached) names.Add(a.name);
-            _attachments.text = names.Count == 0 ? Tr("shape.attach.none") : Tr("shape.attach.list", string.Join(", ", names));
         }
 
         private void Step(int delta)
