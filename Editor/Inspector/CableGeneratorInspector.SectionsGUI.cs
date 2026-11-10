@@ -155,9 +155,9 @@ namespace CableGeneratorV2Editor
             EditorGUI.BeginChangeCheck();
             s_snapKnotIndex = Mathf.Max(0, EditorGUILayout.IntField("対象ノット Index", s_snapKnotIndex));
             if (EditorGUI.EndChangeCheck())
-                s_selectedKnotIndices.Clear();
+                SelectSingleKnot(s_snapKnotIndex);
 
-            if (s_selectedKnotIndices.Count > 0)
+            if (s_selectedKnotIndices.Count > 1)
             {
                 var sorted = new List<int>(s_selectedKnotIndices);
                 sorted.Sort();
@@ -165,7 +165,7 @@ namespace CableGeneratorV2Editor
             }
             else
             {
-                GUILayout.Label("Shiftキー+クリックで複数選択", CableGeneratorTheme.CaptionStyle);
+                GUILayout.Label("Shift / Ctrl + クリック、またはドラッグの矩形で複数選択", CableGeneratorTheme.CaptionStyle);
             }
 
             s_snapDirection        = EditorGUILayout.Vector3Field("投影方向", s_snapDirection);
@@ -176,7 +176,7 @@ namespace CableGeneratorV2Editor
 
             GUILayout.Space(6);
 
-            string snapButtonLabel = s_selectedKnotIndices.Count > 0
+            string snapButtonLabel = s_selectedKnotIndices.Count > 1
                 ? $"選択した {s_selectedKnotIndices.Count} ノットを面へ投影"
                 : "指定ノットを面へ投影";
             if (GUILayout.Button(snapButtonLabel, CableGeneratorTheme.SecondaryButtonStyle))

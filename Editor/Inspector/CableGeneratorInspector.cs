@@ -172,6 +172,14 @@ namespace CableGeneratorV2Editor
 
             bakeFolderPath = EditorPrefs.GetString(kPrefKeyBakeFolder, "");
 
+            // シーンのツールバー (S1) に操作対象を知らせる
+            var current = target as CableGenerator;
+            if (current != null && !EditorUtility.IsPersistent(current))
+            {
+                CableSceneToolState.SetTarget(current);
+                if (current.Spline != null) ValidateKnotSelection(current, current.Spline.Count);
+            }
+
             // プロファイル未設定ならデフォルトを割り当てる。
             // アセット生成を伴うので Editor.OnEnable 中には行わず遅延し、Prefab アセットには適用しない。
             var gen = target as CableGenerator;
@@ -195,6 +203,7 @@ namespace CableGeneratorV2Editor
                 CancelPickingMode();
             if (s_drawTarget != null && s_drawTarget == target as CableGenerator)
                 CancelDrawMode();
+            CableSceneToolState.ClearTarget(target as CableGenerator);
         }
 
         // ================================================================

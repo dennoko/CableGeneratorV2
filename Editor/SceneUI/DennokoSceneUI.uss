@@ -1,0 +1,455 @@
+/* ============================================================
+   DennokoSceneUI.uss
+   SceneView 上の操作 UI (blocks/sceneview.md の S1〜S6)。
+   MaskMakerV4 の DennokoSceneUI.uss を元に、S2 ツールパネル・S4 フィードバック・
+   S6 情報オーバーレイを足したもの。
+
+   ルートには "dennoko-root dennoko-scene" を付け、
+   DennokoTheme.uss → DennokoBlocks.uss → このファイル の順に追加する。
+   ウィンドウ用 (DennokoBlocks.uss) と同じクラス名で大きさを変えるものは
+   .dennoko-scene を前置して、後から追加されるこのファイルで上書きする。
+   ============================================================ */
+
+/* ─── ルート: シーンを透かす ─────────────────────────────── */
+
+.dennoko-root.dennoko-scene.dennoko-overlay-root {
+    flex-grow: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.dennoko-root.dennoko-scene.dennoko-hud {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* ─── シーン用アイコンボタン (26px 角・枠あり) ──────────── */
+
+.dennoko-scene .unity-button.dennoko-icon-button {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    margin: 1px;
+    padding: 0;
+    border-color: var(--dennoko-outline);
+    background-color: var(--dennoko-surface-1);
+}
+
+.dennoko-scene .unity-button.dennoko-icon-button:hover {
+    background-color: var(--dennoko-surface-2);
+    border-color: var(--dennoko-outline-hover);
+}
+
+.dennoko-scene .unity-button.dennoko-icon-button.dennoko-button-active,
+.dennoko-scene .unity-button.dennoko-icon-button.dennoko-button-active:hover {
+    background-color: var(--dennoko-selection-bg);
+    border-color: var(--dennoko-selection-border);
+}
+
+.dennoko-scene .dennoko-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* パネル内の小さいアイコンボタン (✕ / ↺) はウィンドウ版と同じ 20px・枠なし */
+.dennoko-scene .unity-button.dennoko-icon-button.dennoko-icon-button--small {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-color: rgba(0, 0, 0, 0);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.dennoko-scene .unity-button.dennoko-icon-button.dennoko-icon-button--small:hover {
+    border-color: var(--dennoko-outline);
+    background-color: var(--dennoko-surface-2);
+}
+
+.dennoko-scene .dennoko-icon-button--small .dennoko-icon {
+    width: 12px;
+    height: 12px;
+}
+
+/* ─── S1 シーンツールバー (カプセル) ─────────────────────── */
+
+.dennoko-scene .dennoko-capsule {
+    flex-direction: row;
+    align-items: center;
+    height: 32px;
+    padding: 0 8px 0 4px;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    background-color: var(--dennoko-surface-1);
+}
+
+/* 機能のまとまり。右側の縦線で区切る */
+.dennoko-scene .dennoko-segment {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 3px;
+    border-right-width: 1px;
+    border-right-color: var(--dennoko-outline);
+}
+
+/* 文字の選択肢ボタン (島 / パーツ / 面) */
+.dennoko-scene .unity-button.dennoko-choice {
+    min-width: 30px;
+    min-height: 0;
+    height: 24px;
+    margin: 1px;
+    padding: 0 6px;
+    font-size: 10px;
+    border-radius: 4px;
+    border-color: var(--dennoko-outline);
+    background-color: var(--dennoko-surface-1);
+}
+
+.dennoko-scene .unity-button.dennoko-choice:hover {
+    background-color: var(--dennoko-surface-2);
+}
+
+.dennoko-scene .unity-button.dennoko-choice.dennoko-button-active,
+.dennoko-scene .unity-button.dennoko-choice.dennoko-button-active:hover {
+    background-color: var(--dennoko-selection-bg);
+    border-color: var(--dennoko-selection-border);
+}
+
+/* 実行の成功を 2 秒だけ枠で知らせる (アイコンは差し替えない) */
+.dennoko-scene .unity-button.dennoko-icon-button.dennoko-success-frame {
+    border-color: var(--dennoko-semantic-success);
+}
+
+.dennoko-scene .dennoko-capsule__value {
+    margin-left: 4px;
+    font-size: 10px;
+    color: var(--dennoko-text-tertiary);
+}
+
+.dennoko-scene .dennoko-capsule__count {
+    margin-left: 8px;
+    font-size: 11px;
+    color: var(--dennoko-text-primary);
+}
+
+/* ─── S2 シーンツールパネル ─────────────────────────────── */
+
+.dennoko-scene .dennoko-scene-panel {
+    width: 240px;
+    padding: 4px 8px 6px 8px;
+    background-color: var(--dennoko-surface-1);
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    border-radius: 6px;
+}
+
+/* セッション行: ● 編集中 対象名 [✕] */
+.dennoko-scene .dennoko-scene-panel__session {
+    flex-direction: row;
+    align-items: center;
+    min-height: 24px;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--dennoko-outline-subtle);
+}
+
+.dennoko-scene .dennoko-scene-panel__state {
+    flex-shrink: 0;
+    margin-right: 6px;
+    -unity-font-style: bold;
+    color: var(--dennoko-text-primary);
+}
+
+.dennoko-scene .dennoko-scene-panel__target {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--dennoko-text-secondary);
+    cursor: link;
+}
+
+.dennoko-scene .dennoko-scene-panel__target:hover {
+    color: var(--dennoko-selection-border);
+}
+
+/* 1 行: ラベル 44px + 操作 (伸びる) + 値 48px */
+.dennoko-scene .dennoko-scene-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 24px;
+}
+
+.dennoko-scene .dennoko-scene-row__label {
+    width: 44px;
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--dennoko-text-tertiary);
+}
+
+.dennoko-scene .dennoko-scene-row > .unity-base-slider {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    margin: 0 4px 0 0;
+}
+
+.dennoko-scene .dennoko-scene-row > .dennoko-segmented {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.dennoko-scene .dennoko-scene-row__value {
+    width: 48px;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.dennoko-scene .dennoko-scene-row__int {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    margin: 0 2px 0 0;
+}
+
+/* 1 回適用スライダー: 値欄の代わりにドラッグ中だけ % を出す */
+.dennoko-scene .dennoko-scene-row__percent {
+    width: 32px;
+    flex-shrink: 0;
+    font-size: 10px;
+    -unity-text-align: middle-right;
+    color: var(--dennoko-selection-border);
+}
+
+/* 小見出し (行のまとまりが 2 つ以上のときだけ) */
+.dennoko-scene .dennoko-scene-panel__section {
+    flex-direction: row;
+    align-items: center;
+    min-height: 20px;
+    margin-top: 6px;
+}
+
+.dennoko-scene .dennoko-scene-panel__section-title {
+    flex-grow: 1;
+    font-size: 10px;
+    -unity-font-style: bold;
+    color: var(--dennoko-text-tertiary);
+}
+
+/* キーヒント (常設は 2 組まで) */
+.dennoko-scene .dennoko-keyhints {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top-width: 1px;
+    border-top-color: var(--dennoko-outline-subtle);
+}
+
+/* 警告行 (1 行。全文はツールチップ) */
+.dennoko-scene .dennoko-scene-panel__warning {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 5px;
+    padding: 2px 6px;
+    background-color: var(--dennoko-status-warning-bg);
+    border-radius: 3px;
+}
+
+.dennoko-scene .dennoko-scene-panel__warning > .dennoko-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+}
+
+.dennoko-scene .dennoko-scene-panel__warning-text {
+    flex-shrink: 1;
+    min-width: 0;
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--dennoko-semantic-warning);
+}
+
+/* ─── S3 ラジアルメニュー ───────────────────────────────────
+   容れ物 (.dennoko-radial-menu) には枠を付けない (absolute の子が枠の分ずれる)。
+   円の背景は子の .dennoko-radial-bg で描く。 */
+
+.dennoko-scene .dennoko-radial-menu {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+}
+
+.dennoko-scene .dennoko-radial-bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 180px;
+    height: 180px;
+    border-radius: 90px;
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    background-color: var(--dennoko-surface-1);
+}
+
+/* 汎用ボタンの margin / padding を 0 に戻す。ここに枠や背景を書かない
+   (書くと選択中の青枠 .dennoko-button-active (0,3,0) に後勝ちしてしまう) */
+.dennoko-scene .unity-button.dennoko-radial-slice {
+    margin: 0;
+    padding: 0;
+}
+
+.dennoko-scene .dennoko-radial-slice {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    background-color: var(--dennoko-surface-2);
+    font-size: 11px;
+}
+
+/* ポインタが向いているスライス (選択中の青枠より優先) */
+.dennoko-scene .unity-button.dennoko-radial-hot {
+    border-color: var(--dennoko-accent);
+    border-width: 2px;
+}
+
+.dennoko-scene .dennoko-radial-center {
+    position: absolute;
+    left: 40px;
+    top: 80px;
+    width: 100px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: var(--dennoko-text-primary);
+}
+
+/* 動かさずに待つと各スライスの下に出るキー表記 */
+.dennoko-scene .dennoko-radial-key {
+    position: absolute;
+    left: -10px;
+    right: -10px;
+    bottom: -14px;
+    font-size: 9px;
+    -unity-text-align: middle-center;
+    color: var(--dennoko-text-tertiary);
+}
+
+/* ─── S4 シーンフィードバック ───────────────────────────── */
+
+/* トースト: アイコン + 1 行 + 操作 1 つ */
+.dennoko-scene .dennoko-toast {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding: 0 3px 0 8px;
+    background-color: var(--dennoko-surface-1);
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    border-radius: 6px;
+}
+
+.dennoko-scene .dennoko-toast > .dennoko-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+}
+
+.dennoko-scene .dennoko-toast__text {
+    color: var(--dennoko-text-primary);
+    margin-right: 6px;
+    cursor: link;
+}
+
+.dennoko-scene .unity-button.dennoko-toast__action {
+    min-height: 0;
+    height: 22px;
+    margin: 0;
+    padding: 0 8px;
+    font-size: 10px;
+}
+
+/* カーソルヒント / 修飾キーのバッジ */
+.dennoko-scene .dennoko-cursor-hint {
+    position: absolute;
+    padding: 2px 6px;
+    font-size: 10px;
+    color: var(--dennoko-text-primary);
+    background-color: rgba(30, 30, 30, 0.92);
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    border-radius: 4px;
+}
+
+.dennoko-scene .dennoko-mod-badge {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--dennoko-surface-1);
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    border-radius: 9px;
+}
+
+.dennoko-scene .dennoko-mod-badge > .dennoko-icon {
+    width: 12px;
+    height: 12px;
+}
+
+.dennoko-scene .dennoko-mod-badge__text {
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: var(--dennoko-text-primary);
+}
+
+/* ─── S6 情報オーバーレイ ───────────────────────────────── */
+
+.dennoko-scene .dennoko-info-overlay {
+    min-width: 140px;
+    padding: 4px 10px 6px 10px;
+    background-color: var(--dennoko-surface-1);
+    border-width: 1px;
+    border-color: var(--dennoko-outline);
+    border-radius: 6px;
+}
+
+.dennoko-scene .dennoko-info-overlay__value {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: var(--dennoko-text-primary);
+}
+
+.dennoko-scene .dennoko-info-overlay__sub {
+    font-size: 10px;
+    color: var(--dennoko-text-tertiary);
+}
+
+.dennoko-scene .dennoko-info-overlay--good .dennoko-info-overlay__value {
+    color: var(--dennoko-semantic-success);
+}
+
+.dennoko-scene .dennoko-info-overlay--warn .dennoko-info-overlay__value {
+    color: var(--dennoko-semantic-warning);
+}
+
+.dennoko-scene .dennoko-info-overlay--bad .dennoko-info-overlay__value {
+    color: var(--dennoko-semantic-error-text);
+}

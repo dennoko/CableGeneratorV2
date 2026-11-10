@@ -38,8 +38,7 @@ namespace CableGeneratorV2Editor
 
             spline.Insert(index + 1, newKnot, CableTangentMode.AutoSmooth); // 変更通知でメッシュは再構築される
 
-            CableGeneratorInspector.s_snapKnotIndex = index + 1;
-            CableGeneratorInspector.s_selectedKnotIndices.Clear();
+            CableGeneratorInspector.SelectSingleKnot(index + 1);
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
         }
@@ -88,8 +87,7 @@ namespace CableGeneratorV2Editor
 
             Undo.RecordObject(cableGen, "制御点を末尾に追加");
             spline.Add(new CableKnot(newPos, new Vector3(0f, 0f, -0.5f), new Vector3(0f, 0f, 0.5f), Quaternion.identity, CableTangentMode.AutoSmooth));
-            CableGeneratorInspector.s_snapKnotIndex = spline.Count - 1;
-            CableGeneratorInspector.s_selectedKnotIndices.Clear();
+            CableGeneratorInspector.SelectSingleKnot(spline.Count - 1);
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
         }
@@ -121,7 +119,7 @@ namespace CableGeneratorV2Editor
 
             spline.ReplaceKnots(flipped, spline.Closed, remap);
             CableGeneratorInspector.s_snapKnotIndex = Mathf.Clamp(count - 1 - CableGeneratorInspector.s_snapKnotIndex, 0, count - 1);
-            CableGeneratorInspector.s_selectedKnotIndices.Clear();
+            CableGeneratorInspector.ClearKnotSelection();
             EditorUtility.SetDirty(cableGen);
             SceneView.RepaintAll();
         }

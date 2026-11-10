@@ -19,7 +19,7 @@ namespace CableGeneratorV2Editor
                     fontStyle = FontStyle.Bold,
                     fontSize  = 11,
                     alignment = TextAnchor.MiddleCenter,
-                    normal    = { textColor = new Color(0.5f, 0.9f, 1f) },
+                    normal    = { textColor = new Color(1f, 1f, 1f, 0.85f) },
                 };
             }
 
@@ -28,7 +28,7 @@ namespace CableGeneratorV2Editor
                 s_indexLabelSelectedStyle = new GUIStyle(s_indexLabelStyle)
                 {
                     fontSize = 13,
-                    normal   = { textColor = new Color(1f, 0.9f, 0.2f) },
+                    normal   = { textColor = DennokoSceneColors.SelectedLine },
                 };
             }
 
@@ -56,8 +56,8 @@ namespace CableGeneratorV2Editor
             CableGeneratorTheme.Initialize();
             EnsureSceneStyles();
 
-            // Scene ビュー上部カプセルオーバーレイバーを常時描画
-            DrawSceneOverlayToolbar(gen);
+            // シーン上のツールバーは S1 Overlay (CableSceneToolbar) が描く。ここは対象を知らせるだけ
+            CableSceneToolState.SetTarget(gen);
 
             // 1. サーフェス描画モード
             if (s_drawTarget == gen)
@@ -77,20 +77,27 @@ namespace CableGeneratorV2Editor
             var spline = gen.Spline;
             Transform tf = gen.transform;
             Vector3 localGravity = tf.InverseTransformVector(Vector3.down);
+            Event e = Event.current;
+
+            int count = spline.Count;
+            ValidateKnotSelection(gen, count);
+
+            // 矩形選択の既定コントロール。ID は他のハンドルより先に取り、処理は最後に回す（ハンドルやボタンを優先する）
+            int rectSelectId = GUIUtility.GetControlID(s_rectSelectHash, FocusType.Passive);
 
             // プレビュー線は描画イベントでのみ評価する（Layout / マウスイベント毎の曲線評価を省く）
-            if (Event.current.type == EventType.Repaint)
+            if (e.type == EventType.Repaint)
                 DrawSplinePreview(spline, tf, localGravity);
             DrawSegmentMidpointGizmos(gen, spline, tf, localGravity);
 
-            int count = spline.Count;
+            bool removePreview = IsKnotRemoveModifier(e);
             for (int i = 0; i < count; i++)
             {
                 var     knot     = spline[i];
                 Vector3 worldPos = tf.TransformPoint(knot.position);
 
                 float handleSize = HandleUtility.GetHandleSize(worldPos) * 0.1f;
-                bool  isSelected = i == s_snapKnotIndex || s_selectedKnotIndices.Contains(i);
+                bool  isSelected = s_selectedKnotIndices.Contains(i);
 
                 // インデックスラベル ([0]▶ / ◀[N] / [i])
                 string idxLabel = (i == 0) ? $"[{i}]▶"
@@ -99,38 +106,16 @@ namespace CableGeneratorV2Editor
                 Handles.Label(worldPos + Vector3.up * (handleSize * 2.2f), idxLabel,
                     isSelected ? s_indexLabelSelectedStyle : s_indexLabelStyle);
 
-                // PositionHandle: ドラッグで移動
-                Handles.color = GetKnotColor(knot.mode);
-                EditorGUI.BeginChangeCheck();
-                Vector3 newWorldPos = Handles.PositionHandle(worldPos, Quaternion.identity);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(gen, "Move Cable Control Point");
-                    knot.position = tf.InverseTransformPoint(newWorldPos);
-                    spline.SetKnot(i, knot);
-                    EditorUtility.SetDirty(gen);
-                }
-
-                // 選択スフィア: クリックで単体選択、Shift+クリックで複数選択
-                Handles.color = isSelected
-                    ? (i == s_snapKnotIndex ? Color.white : new Color(1f, 0.9f, 0.2f))
+                // 制御点の球: 常に表示。クリックで単体選択、Shift / Ctrl + クリックで選択に足す / 外す
+                Handles.color = IsKnotInDragRect(worldPos)
+                    ? (removePreview ? DennokoSceneColors.HoverRemove : DennokoSceneColors.HoverAdd)
+                    : isSelected ? DennokoSceneColors.SelectedLine
                     : GetKnotColor(knot.mode);
 
-                bool shiftHeld = Event.current.shift;
                 if (Handles.Button(worldPos, Quaternion.identity, handleSize * 1.8f, handleSize * 2.3f, Handles.SphereHandleCap))
                 {
-                    if (shiftHeld)
-                    {
-                        if (s_selectedKnotIndices.Contains(i)) s_selectedKnotIndices.Remove(i);
-                        else                                   s_selectedKnotIndices.Add(i);
-                    }
-                    else
-                    {
-                        s_selectedKnotIndices.Clear();
-                        s_snapKnotIndex = i;
-                    }
-                    Repaint();
-                    SceneView.RepaintAll();
+                    if (e.shift || e.control || e.command) ToggleKnotSelection(i);
+                    else                                   SelectSingleKnot(i);
                 }
 
                 // 手動モード時のみベジェ接線ハンドルを表示（AutoSmooth時はスッキリ隠す）
@@ -141,11 +126,10 @@ namespace CableGeneratorV2Editor
                 }
             }
 
-            // 選択中ノットの直上クイックフローティングバー
-            if (s_snapKnotIndex >= 0 && s_snapKnotIndex < count)
-            {
-                DrawSelectedKnotFloatingBar(gen, spline, tf, s_snapKnotIndex);
-            }
+            // XYZ の移動矢印は選択中の制御点だけ。複数選択時はその中心に 1 つだけ出してまとめて動かす
+            DrawSelectionMoveHandle(gen, spline, tf);
+
+            HandleKnotRectSelection(gen, spline, tf, rectSelectId);
         }
 
         // ================================================================
@@ -191,63 +175,6 @@ namespace CableGeneratorV2Editor
                 }
                 Handles.EndGUI();
             }
-        }
-
-        // ================================================================
-        //  Selected Knot Quick Floating Bar
-        // ================================================================
-
-        void DrawSelectedKnotFloatingBar(CableGenerator gen, CableSpline spline, Transform tf, int index)
-        {
-            Vector3 worldPos = tf.TransformPoint(spline[index].position);
-            Vector2 guiPt = HandleUtility.WorldToGUIPoint(worldPos);
-
-            Handles.BeginGUI();
-            Rect barRect = new Rect(guiPt.x - 105f, guiPt.y + 18f, 210f, 24f);
-            GUILayout.BeginArea(barRect, CableGeneratorTheme.OverlayBarStyle);
-            GUILayout.BeginHorizontal();
-
-            int currentSimple = ToSimpleIndex(spline.GetTangentMode(index));
-            string[] modeShort = { "自動", "スムーズ", "角" };
-            for (int m = 0; m < 3; m++)
-            {
-                if (GUILayout.Button(modeShort[m],
-                    currentSimple == m ? CableGeneratorTheme.ActiveToggleStyle : CableGeneratorTheme.SecondaryButtonStyle,
-                    GUILayout.Height(16)))
-                {
-                    Undo.RecordObject(gen, "接線モードを変更");
-                    spline.SetTangentMode(index, FromSimpleIndex(m));
-                    EditorUtility.SetDirty(gen);
-                    Repaint();
-                }
-            }
-
-            if (GUILayout.Button(new GUIContent("🔌", "この制御点にアタッチメントを追加"),
-                CableGeneratorTheme.SecondaryButtonStyle, GUILayout.Width(24), GUILayout.Height(16)))
-            {
-                AddAttachment(gen, index);
-                GUILayout.EndHorizontal();
-                GUILayout.EndArea();
-                Handles.EndGUI();
-                GUIUtility.ExitGUI(); // 選択変更でインスペクタが作り直されるため GUI を打ち切る
-            }
-
-            EditorGUI.BeginDisabledGroup(spline.Count <= 2);
-            if (GUILayout.Button(new GUIContent("×", "この制御点を削除"),
-                CableGeneratorTheme.DangerButtonStyle, GUILayout.Width(20), GUILayout.Height(16)))
-            {
-                Undo.RecordObject(gen, "制御点を削除");
-                spline.RemoveAt(index);
-                s_snapKnotIndex = Mathf.Clamp(s_snapKnotIndex, 0, Mathf.Max(0, spline.Count - 1));
-                s_selectedKnotIndices.Clear();
-                EditorUtility.SetDirty(gen);
-                Repaint();
-            }
-            EditorGUI.EndDisabledGroup();
-
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
-            Handles.EndGUI();
         }
     }
 }

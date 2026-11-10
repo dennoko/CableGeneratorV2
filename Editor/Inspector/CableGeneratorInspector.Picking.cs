@@ -54,36 +54,10 @@ namespace CableGeneratorV2Editor
             }
         }
 
-        static GUIStyle s_sceneHintStyle;
-
-        static void DrawSceneHintLabel()
+        // シーン上の操作ガイド（カーソルヒント）。モード状態はツールバーの「2点配線中」で示すので、ここは次の操作だけ
+        static void ShowPickingGuide()
         {
-            DrawSceneHintText(s_pickCount == 0
-                ? "[ 2点配線モード ]  1点目（始点）の表面をクリック   Esc: キャンセル"
-                : "[ 2点配線モード ]  2点目（終点）の表面をクリック   Esc: キャンセル");
-        }
-
-        static void DrawSceneHintText(string msg)
-        {
-            Handles.BeginGUI();
-
-            if (s_sceneHintStyle == null)
-                s_sceneHintStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize  = 12,
-                    normal    = { textColor = Color.white },
-                };
-
-            var   sceneView = SceneView.currentDrawingSceneView;
-            float viewWidth = sceneView != null
-                ? sceneView.position.width
-                : Screen.width / EditorGUIUtility.pixelsPerPoint;
-
-            Vector2 size = s_sceneHintStyle.CalcSize(new GUIContent(msg));
-            float   x    = (viewWidth - size.x) * 0.5f;
-            GUI.Box(new Rect(x, 42, size.x + 20, size.y + 8), msg, s_sceneHintStyle);
-            Handles.EndGUI();
+            CableSceneGuide.Show(s_pickCount == 0 ? "始点の表面をクリック" : "終点の表面をクリック");
         }
 
         static MeshRaycastSession s_pickSession;
@@ -97,6 +71,7 @@ namespace CableGeneratorV2Editor
             s_hasPickHover  = false;
             s_pickSession   = new MeshRaycastSession(~0, target.gameObject);
             SceneView.RepaintAll();
+            CableSceneToolState.Raise();
         }
 
         public static void CancelPickingMode()
@@ -106,7 +81,9 @@ namespace CableGeneratorV2Editor
             s_pickingTarget = null;
             s_pickCount     = 0;
             s_hasPickHover  = false;
+            CableSceneGuide.Hide();
             SceneView.RepaintAll();
+            CableSceneToolState.Raise();
         }
 
         void HandlePickingSceneGUI(CableGenerator gen)
@@ -115,7 +92,7 @@ namespace CableGeneratorV2Editor
             HandleUtility.AddDefaultControl(controlID);
 
             DrawPickedPoints();
-            DrawSceneHintLabel();
+            ShowPickingGuide();
 
             Event e = Event.current;
             if (s_pickSession == null)

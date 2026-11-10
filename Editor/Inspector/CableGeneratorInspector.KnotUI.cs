@@ -17,7 +17,7 @@ namespace CableGeneratorV2Editor
 
             for (int i = 0; i < count; i++)
             {
-                bool isSelected = i == s_snapKnotIndex;
+                bool isSelected = s_selectedKnotIndices.Contains(i);
                 bool isFirst    = i == 0;
                 bool isLast     = i == count - 1 && !spline.Closed;
 
@@ -33,9 +33,7 @@ namespace CableGeneratorV2Editor
 
                 if (GUILayout.Button(labelText, CableGeneratorTheme.KnotLabelButtonStyle, GUILayout.ExpandWidth(true), GUILayout.Height(22)))
                 {
-                    s_snapKnotIndex = i;
-                    s_selectedKnotIndices.Clear();
-                    SceneView.RepaintAll();
+                    SelectSingleKnot(i);
                     Repaint();
                 }
 
@@ -69,9 +67,9 @@ namespace CableGeneratorV2Editor
                 if (s_snapKnotIndex >= deleteIndex)
                     s_snapKnotIndex--;
                 s_snapKnotIndex = Mathf.Clamp(s_snapKnotIndex, 0, Mathf.Max(0, spline.Count - 1));
-                s_selectedKnotIndices.Clear();
                 EditorUtility.SetDirty(generator);
-                SceneView.RepaintAll();
+                s_selectedKnotIndices.Clear();
+                OnKnotSelectionChanged();
             }
         }
 
@@ -94,18 +92,14 @@ namespace CableGeneratorV2Editor
             EditorGUI.BeginDisabledGroup(index <= 0);
             if (GUILayout.Button("◀", CableGeneratorTheme.SecondaryButtonStyle, GUILayout.Width(26)))
             {
-                s_snapKnotIndex--;
-                s_selectedKnotIndices.Clear();
-                SceneView.RepaintAll();
+                SelectSingleKnot(index - 1);
             }
             EditorGUI.EndDisabledGroup();
 
             EditorGUI.BeginDisabledGroup(index >= spline.Count - 1);
             if (GUILayout.Button("▶", CableGeneratorTheme.SecondaryButtonStyle, GUILayout.Width(26)))
             {
-                s_snapKnotIndex++;
-                s_selectedKnotIndices.Clear();
-                SceneView.RepaintAll();
+                SelectSingleKnot(index + 1);
             }
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();

@@ -44,6 +44,7 @@ namespace CableGeneratorV2Editor
 
             s_drawSession = new MeshRaycastSession(s_drawLayerMask, target.gameObject);
             SceneView.RepaintAll();
+            CableSceneToolState.Raise();
         }
 
         public static void CancelDrawMode()
@@ -55,7 +56,9 @@ namespace CableGeneratorV2Editor
             s_strokeNormals.Clear();
             s_isStroking  = false;
             s_hasHoverHit = false;
+            CableSceneGuide.Hide();
             SceneView.RepaintAll();
+            CableSceneToolState.Raise();
         }
 
         void HandleSurfaceDrawSceneGUI(CableGenerator gen)
@@ -67,12 +70,12 @@ namespace CableGeneratorV2Editor
             if (s_drawSession == null)
                 s_drawSession = new MeshRaycastSession(s_drawLayerMask, gen.gameObject);
 
+            // シーン上の操作ガイド（カーソルヒント）。イベントを消費する前に呼んでカーソルに追従させる
+            CableSceneGuide.Show(s_isStroking ? "離すと確定　Esc でやり直し" : "表面をドラッグしてなぞる");
+
             if (e.type == EventType.Repaint)
             {
                 DrawStrokePreview();
-                DrawSceneHintText(s_isStroking
-                    ? "[ サーフェス描画 ]  マウスを離すと確定   Esc: やり直し"
-                    : "[ サーフェス描画 ]  ドラッグで表面をなぞって配線   Esc: キャンセル");
                 return; // 描画イベントからは再描画要求を出さない（常時再描画ループ防止）
             }
 

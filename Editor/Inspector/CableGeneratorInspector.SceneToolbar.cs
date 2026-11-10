@@ -7,110 +7,145 @@ namespace CableGeneratorV2Editor
     public partial class CableGeneratorInspector
     {
         // ================================================================
-        //  Scene View Top Capsule Overlay Toolbar
+        //  Scene Toolbar Actions — S1 Overlay (CableSceneToolbar) から呼ぶ操作
+        //  表示は CableSceneToolbar.uxml / .cs。ここは状態の読み書きだけを持つ
         // ================================================================
 
-        void DrawSceneOverlayToolbar(CableGenerator gen)
+        internal static bool IsPicking(CableGenerator gen) => gen != null && s_pickingTarget == gen;
+        internal static bool IsDrawing(CableGenerator gen) => gen != null && s_drawTarget == gen;
+
+        internal static void TogglePickingMode(CableGenerator gen)
         {
-            Handles.BeginGUI();
+            if (IsPicking(gen)) CancelPickingMode();
+            else                StartPickingMode(gen);
+            CableSceneToolState.Raise();
+        }
 
-            var sceneView = SceneView.currentDrawingSceneView;
-            float viewWidth = sceneView != null
-                ? sceneView.position.width
-                : Screen.width / EditorGUIUtility.pixelsPerPoint;
+        internal static void ToggleDrawMode(CableGenerator gen)
+        {
+            if (IsDrawing(gen)) CancelDrawMode();
+            else                StartDrawMode(gen);
+            CableSceneToolState.Raise();
+        }
 
-            float barWidth = Mathf.Min(viewWidth - 24f, 760f);
-            float barX = (viewWidth - barWidth) * 0.5f;
+        internal static void ToggleSurfaceCollision(CableGenerator gen)
+        {
+            Undo.RecordObject(gen, "Toggle Cable Surface Collision");
+            gen.enableSurfaceCollision = !gen.enableSurfaceCollision;
+            EditorUtility.SetDirty(gen);
+            gen.RequestRefresh();
+            AfterToolbarAction();
+        }
 
-            GUILayout.BeginArea(new Rect(barX, 8f, barWidth, 36f), CableGeneratorTheme.OverlayBarStyle);
-            GUILayout.BeginHorizontal();
+        internal static void ToggleLod(CableGenerator gen)
+        {
+            Undo.RecordObject(gen, "Toggle Cable LOD");
+            gen.enableLod = !gen.enableLod;
+            EditorUtility.SetDirty(gen);
+            gen.RequestRefresh();
+            AfterToolbarAction();
+        }
 
-            // 1. 2点配線ボタン
-            bool isPicking = s_pickingTarget == gen;
-            if (GUILayout.Button(isPicking ? "🎯 2点配線中 (Esc解除)" : "🎯 2点配線",
-                isPicking ? CableGeneratorTheme.ActiveToggleStyle : CableGeneratorTheme.SecondaryButtonStyle))
+        internal static bool HasGeneratedMesh(CableGenerator gen)
+        {
+            Mesh mesh = gen.GeneratedMesh;
+            return mesh != null && mesh.vertexCount > 0;
+        }
+
+        internal static void BakeFromToolbar(CableGenerator gen)
+        {
+            BakeCableToSceneAndAssets(gen, EditorPrefs.GetString(kPrefKeyBakeFolder, ""));
+            AfterToolbarAction();
+        }
+
+        internal static void ExportFbxFromToolbar(CableGenerator gen)
+        {
+            ExportCableFbx(gen, EditorPrefs.GetString(kPrefKeyBakeFolder, ""), s_fbxLodTier, true, true);
+            AfterToolbarAction();
+        }
+
+        /// <summary>右端に出すポリゴン数（LOD 有効時は「LOD0→LOD2」）。</summary>
+        internal static string TriangleCountText(CableGenerator gen)
+        {
+            int tri = TriangleCount(gen.GeneratedMesh);
+            Mesh lod2 = gen.enableLod ? gen.GeneratedLod2Mesh : null;
+            return lod2 != null ? $"{tri}→{TriangleCount(lod2)}△" : $"{tri}△";
+        }
+
+        // ---- 選択中の制御点 ----
+
+        /// <summary>選択中の制御点の接線モード（自動 0 / スムーズ 1 / コーナー 2）。混在または未選択なら -1。</summary>
+        internal static int SelectedKnotsSimpleMode(CableGenerator gen)
+        {
+            var selected = GetSelectedKnots(gen.Spline.Count);
+            int mode = -1;
+            foreach (int i in selected)
             {
-                if (isPicking) CancelPickingMode();
-                else           StartPickingMode(gen);
+                int m = ToSimpleIndex(gen.Spline.GetTangentMode(i));
+                if (mode >= 0 && m != mode) return -1;
+                mode = m;
             }
+            return mode;
+        }
 
-            // 2. なぞり描画ボタン
-            bool isDrawing = s_drawTarget == gen;
-            if (GUILayout.Button(isDrawing ? "✏️ 描画中 (Esc解除)" : "✏️ なぞり描画",
-                isDrawing ? CableGeneratorTheme.ActiveToggleStyle : CableGeneratorTheme.SecondaryButtonStyle))
-            {
-                if (isDrawing) CancelDrawMode();
-                else           StartDrawMode(gen);
-            }
+        internal static void SetSelectedKnotsMode(CableGenerator gen, int simpleIndex)
+        {
+            var spline   = gen.Spline;
+            var selected = GetSelectedKnots(spline.Count);
+            if (selected.Count == 0) return;
 
-            // 3. 面投影ショートカット
-            if (GUILayout.Button(new GUIContent("🧲 面投影", "選択ノットを下方向のメッシュ表面へスナップ投影します"),
-                CableGeneratorTheme.SecondaryButtonStyle))
-            {
-                SnapKnotInDirection(gen);
-                Repaint();
-            }
+            Undo.RecordObject(gen, "接線モードを変更");
+            for (int n = 0; n < selected.Count; n++)
+                spline.SetTangentMode(selected[n], FromSimpleIndex(simpleIndex), n == selected.Count - 1);
+            EditorUtility.SetDirty(gen);
+            AfterToolbarAction();
+        }
 
-            // 4. 床判定 (Auto-Draping) トグル
-            bool colOn = gen.enableSurfaceCollision;
-            if (GUILayout.Button(colOn ? "🧱 床判定:ON" : "🧱 床判定:OFF",
-                colOn ? CableGeneratorTheme.ActiveToggleStyle : CableGeneratorTheme.SecondaryButtonStyle))
-            {
-                Undo.RecordObject(gen, "Toggle Cable Surface Collision");
-                gen.enableSurfaceCollision = !colOn;
-                EditorUtility.SetDirty(gen);
-                gen.RequestRefresh(); // 構造変更を伴い得るので OnGUI 外で実行
-                Repaint();
-            }
+        internal static void SnapSelectedKnots(CableGenerator gen)
+        {
+            SnapKnotInDirection(gen);
+            AfterToolbarAction();
+        }
 
-            // 5. ワンクリック LOD トグル
-            bool lodOn = gen.enableLod;
-            if (GUILayout.Button(lodOn ? "⚡ LOD:ON" : "⚡ LOD:OFF",
-                lodOn ? CableGeneratorTheme.ActiveToggleStyle : CableGeneratorTheme.SecondaryButtonStyle))
-            {
-                Undo.RecordObject(gen, "Toggle Cable LOD");
-                gen.enableLod = !lodOn;
-                EditorUtility.SetDirty(gen);
-                gen.RequestRefresh();
-                Repaint();
-            }
+        internal static bool CanAddAttachmentToSelection(CableGenerator gen) =>
+            GetSelectedKnots(gen.Spline.Count).Count == 1;
 
-            // 6. メッシュ保存 (Bake)
-            Mesh mesh0 = gen.GeneratedMesh;
-            bool hasMesh = mesh0 != null && mesh0.vertexCount > 0;
-            EditorGUI.BeginDisabledGroup(!hasMesh);
-            if (GUILayout.Button("💾 保存(Bake)", CableGeneratorTheme.SecondaryButtonStyle))
-            {
-                BakeCableToSceneAndAssets(gen, bakeFolderPath);
-                GUIUtility.ExitGUI();
-            }
+        internal static void AddAttachmentToSelection(CableGenerator gen)
+        {
+            var selected = GetSelectedKnots(gen.Spline.Count);
+            if (selected.Count != 1) return;
+            AddAttachment(gen, selected[0]);
+            AfterToolbarAction();
+        }
 
-            // 7. ボーン付き FBX 書き出し（形状固定）
-            if (GUILayout.Button(new GUIContent($"🦴 FBX({gen.boneCount}本)", "現在の形状を固定し、ボーン＆ウェイト付き FBX を書き出してシーンに配置します"),
-                CableGeneratorTheme.SecondaryButtonStyle))
-            {
-                ExportCableFbx(gen, bakeFolderPath, s_fbxLodTier, true, true);
-                GUIUtility.ExitGUI();
-            }
-            EditorGUI.EndDisabledGroup();
+        /// <summary>制御点は 2 つ以上残す。</summary>
+        internal static bool CanDeleteSelectedKnots(CableGenerator gen)
+        {
+            int selected = GetSelectedKnots(gen.Spline.Count).Count;
+            return selected > 0 && gen.Spline.Count - selected >= 2;
+        }
 
-            // 8. ポリゴン数バッジ
-            int triCount = TriangleCount(mesh0);
-            Mesh lod2 = lodOn ? gen.GeneratedLod2Mesh : null;
-            if (lod2 != null)
-            {
-                GUILayout.Label($"{triCount}→{TriangleCount(lod2)}△", CableGeneratorTheme.CaptionStyle, GUILayout.Width(68));
-            }
-            else
-            {
-                GUILayout.Label($"{triCount}△", CableGeneratorTheme.CaptionStyle, GUILayout.Width(48));
-            }
+        internal static void DeleteSelectedKnots(CableGenerator gen)
+        {
+            if (!CanDeleteSelectedKnots(gen)) return;
+            var spline   = gen.Spline;
+            var selected = GetSelectedKnots(spline.Count);
 
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
+            Undo.RecordObject(gen, selected.Count > 1 ? "制御点をまとめて削除" : "制御点を削除");
+            for (int n = selected.Count - 1; n >= 0; n--)   // 後ろから消して番号をずらさない
+                spline.RemoveAt(selected[n]);
 
-            Handles.EndGUI();
+            s_snapKnotIndex = Mathf.Clamp(selected[0], 0, Mathf.Max(0, spline.Count - 1));
+            s_selectedKnotIndices.Clear();
+            EditorUtility.SetDirty(gen);
+            OnKnotSelectionChanged();
+        }
+
+        static void AfterToolbarAction()
+        {
+            SceneView.RepaintAll();
+            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            CableSceneToolState.Raise();
         }
     }
 }
-
