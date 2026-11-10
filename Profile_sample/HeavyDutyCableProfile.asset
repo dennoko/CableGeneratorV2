@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1751a9d1e68afeb4986816a9b7501af6, type: 3}
   m_Name: HeavyDutyCableProfile
   m_EditorClassIdentifier: 
-  radius: 0.015
+  radius: 0.005
   segments: 16
   ribCount: 0
   ribDepth: 0.1

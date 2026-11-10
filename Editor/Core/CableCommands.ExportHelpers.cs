@@ -34,6 +34,28 @@ namespace CableGeneratorV2Editor
         }
 
         /// <summary>
+        /// 取り込んだモデル（FBX の Prefab インスタンス）を元ケーブルに重ねる。
+        /// モデルのルートには ModelImporter が軸変換などの変換を載せることがある（bakeAxisConversion が OFF のとき、
+        /// 軸の変換はルートの GameObject で行われる）。元ケーブルの姿勢で上書きするとそれが消えて位置・向きがずれるので、
+        /// 「元ケーブルの姿勢 × モデルのルートの姿勢」を合成して置く。
+        /// ルートの姿勢が単位行列なら PlaceNextToSource と同じ結果になる。
+        /// </summary>
+        static void PlaceModelOverSource(Transform target, Transform source)
+        {
+            // InstantiatePrefab 直後の姿勢 = モデルのアセットのルートの姿勢
+            Vector3    rootPosition = target.localPosition;
+            Quaternion rootRotation = target.localRotation;
+            Vector3    rootScale    = target.localScale;
+
+            PlaceNextToSource(target, source);
+
+            // TRS の合成。回転付きのルートに不均一なスケールが重なる場合は近似になる（Transform で剪断は表せない）
+            target.localPosition = source.localPosition + source.localRotation * Vector3.Scale(source.localScale, rootPosition);
+            target.localRotation = source.localRotation * rootRotation;
+            target.localScale    = Vector3.Scale(source.localScale, rootScale);
+        }
+
+        /// <summary>
         /// アタッチされたモデルをワールド座標・スケールを維持して複製配置する。
         /// parentForKnot が指定されていればそのノットに対応する Transform（最寄りボーン等）の子にする。
         /// recordUndo が false なら Undo に記録しない（Prefab に保存してすぐ破棄する一時オブジェクト用）。

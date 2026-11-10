@@ -313,7 +313,7 @@ namespace CableGeneratorV2Editor
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(result.modelAsset);
             instance.name = GenerateUniqueGameObjectName(generator.gameObject, generator.gameObject.name + "_cable_fbx");
             Undo.RegisterCreatedObjectUndo(instance, Tr("undo.placeFbx"));
-            PlaceNextToSource(instance.transform, generator.transform);
+            PlaceModelOverSource(instance.transform, generator.transform);   // モデルのルートの変換（軸変換など）を消さない
 
             Transform[] bones = null;
             if (result.boneCount >= 2)

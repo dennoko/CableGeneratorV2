@@ -368,6 +368,67 @@ namespace CableGeneratorV2Tests
             Assert.IsNull(prefab.GetComponentInChildren<CableKnotAttachment>(true), "Prefab にはアタッチメントのコンポーネントを持ち込まない");
         }
 
+        /// <summary>
+        /// FBX を書き出してシーンに置いたとき、見た目（ワールド空間の形）が元ケーブルとぴったり重なること。
+        /// 親の回転・スケールとケーブル自身の回転を付け、ボーンあり（実際にスキニングした結果）・なしの両方で確かめる。
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public void FbxExport_PlaceInScene_OverlapsSourceInWorldSpace(bool includeBones)
+        {
+            var parent = new GameObject("Parent");
+            created.Add(parent);
+            parent.transform.SetPositionAndRotation(new Vector3(1f, 2f, 3f), Quaternion.Euler(0f, 30f, 0f));
+            parent.transform.localScale = new Vector3(2f, 2f, 2f);
+
+            var gen = CreateCable(4);
+            gen.transform.SetParent(parent.transform, false);
+            gen.transform.localPosition = new Vector3(0.5f, -0.2f, 1f);
+            gen.transform.localRotation = Quaternion.Euler(20f, 50f, -10f);
+            gen.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+            gen.Spline.SetSegmentSag(1, 0.3f);
+            gen.boneCount = 6;
+            gen.RebuildMesh();
+
+            // 書き出すと元ケーブルは無効化されるので、先に期待値を取る
+            Bounds expected = WorldBounds(gen.GeneratedMesh.vertices, gen.transform.localToWorldMatrix);
+
+            var instance = CableCommands.ExportCableFbx(gen, kTempFolder, 0, includeBones, placeInScene: true);
+            Assert.IsNotNull(instance, "FBX をシーンに置けること");
+            created.Add(instance);
+            Assert.AreSame(parent.transform, instance.transform.parent, "元ケーブルと同じ親に置くこと");
+
+            Bounds actual;
+            var smr = instance.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (includeBones)
+            {
+                Assert.IsNotNull(smr, "ボーンありは SkinnedMeshRenderer になること");
+                // 実際にボーンで変形した結果（バインドポーズ込み）で比べる。useScale でレンダラーのスケールまで含めた形になる
+                var baked = new Mesh();
+                created.Add(baked);
+                smr.BakeMesh(baked, true);
+                var t = smr.transform;
+                actual = WorldBounds(baked.vertices, Matrix4x4.TRS(t.position, t.rotation, Vector3.one));
+            }
+            else
+            {
+                Assert.IsNull(smr);
+                var mf = instance.GetComponentInChildren<MeshFilter>();
+                Assert.IsNotNull(mf);
+                actual = WorldBounds(mf.sharedMesh.vertices, mf.transform.localToWorldMatrix);
+            }
+
+            AssertVector(expected.center, actual.center, 2e-3f, "ワールドでの中心");
+            AssertVector(expected.size, actual.size, 2e-3f, "ワールドでの大きさ（向きがずれると変わる）");
+        }
+
+        static Bounds WorldBounds(Vector3[] vertices, Matrix4x4 toWorld)
+        {
+            var b = new Bounds(toWorld.MultiplyPoint3x4(vertices[0]), Vector3.zero);
+            foreach (var v in vertices) b.Encapsulate(toWorld.MultiplyPoint3x4(v));
+            return b;
+        }
+
         static float FrontFacingRatio(Mesh mesh)
         {
             var v = mesh.vertices;
