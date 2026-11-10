@@ -44,7 +44,7 @@ namespace CableGeneratorV2Editor
         /// <summary>
         /// 単発のメッシュに対して BVH レイキャストを行う（テストおよび個別メッシュ判定用）。
         /// </summary>
-        public static bool RaycastSingleMesh(Mesh mesh, Matrix4x4 localToWorld, Ray worldRay, out MeshRayHit hit)
+        public static bool RaycastSingleMesh(Mesh mesh, Matrix4x4 localToWorld, Ray worldRay, out MeshRayHit hit, bool ignoreBackfaces = false)
         {
             hit = default;
             if (mesh == null) return false;
@@ -57,7 +57,7 @@ namespace CableGeneratorV2Editor
             Vector3 localDir    = worldToLocal.MultiplyVector(worldRay.direction);
 
             float bestT = float.MaxValue;
-            if (!RaycastBvh(bvh, localOrigin, localDir, ref bestT, out int tri, out float u, out float v))
+            if (!RaycastBvh(bvh, localOrigin, localDir, ref bestT, out int tri, out float u, out float v, ignoreBackfaces))
                 return false;
 
             var cand = new Candidate

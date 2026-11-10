@@ -14,6 +14,7 @@ namespace CableGeneratorV2Editor
 
         // ─── 配線 › 引き方 ─────────────────────────────────────────────
         public int   hitLayerMask        = ~0;     // 2点配線・なぞり描画の「当たる対象」
+        public bool  ignoreBackfaces     = true;   // 2点配線・なぞり描画: 面の裏側には当たらない
         public float pickTangentScale    = 1f;     // 2点配線のハンドルの長さ
         public float drawSurfaceOffset   = 0.003f; // なぞり: 面からの浮き (m)
         public float drawSimplifyTol     = 0.01f;  // なぞり: 簡略化の許容誤差 (m)
@@ -31,6 +32,7 @@ namespace CableGeneratorV2Editor
         public float   snapMaxDistance = 10f;
         public float   snapSurfaceOffset = 0.003f;
         public int     snapLayerMask = ~0;
+        public bool    snapIgnoreBackfaces = true;
 
         // ─── 形 ────────────────────────────────────────────────────────
         public bool useGlobalKnotCoords = true;
@@ -63,6 +65,7 @@ namespace CableGeneratorV2Editor
         {
             // ScriptableSingleton は 2 つ目のインスタンスを作るとエラーになるので、既定値を直接入れる
             hitLayerMask = ~0;
+            ignoreBackfaces = true;
             pickTangentScale = 1f;
             drawSurfaceOffset = 0.003f;
             drawSimplifyTol = 0.01f;
@@ -76,6 +79,7 @@ namespace CableGeneratorV2Editor
             snapMaxDistance = 10f;
             snapSurfaceOffset = 0.003f;
             snapLayerMask = ~0;
+            snapIgnoreBackfaces = true;
             useGlobalKnotCoords = true;
             profileFolder = DefaultProfileFolder;
             outputFolder = "";

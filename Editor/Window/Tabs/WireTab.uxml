@@ -25,6 +25,7 @@
                 <ui:VisualElement name="method-chips" class="dennoko-details__chips" />
             </ui:VisualElement>
             <ui:VisualElement class="dennoko-details__content">
+                <ui:Toggle name="ignore-backfaces" text="#wire.ignoreBackfaces" tooltip="#wire.ignoreBackfaces.tip" />
                 <ui:Slider name="pick-tangent" label="#wire.tangentScale" tooltip="#wire.tangentScale.tip" low-value="0.1" high-value="3" show-input-field="true" />
                 <ui:FloatField name="draw-offset" label="#wire.surfaceOffset" tooltip="#wire.surfaceOffset.tip" />
                 <ui:Slider name="draw-simplify" label="#wire.simplify" tooltip="#wire.simplify.tip" low-value="0.001" high-value="0.1" show-input-field="true" />
@@ -99,6 +100,7 @@
                 <ui:FloatField name="snap-offset" label="#wire.surfaceOffset" tooltip="#wire.surfaceOffset.tip" />
                 <ui:Toggle name="snap-local" text="#wire.dir.local" tooltip="#wire.dir.local.tip" />
                 <uie:LayerMaskField name="snap-layers" label="#wire.hitLayers" tooltip="#wire.hitLayers.tip" />
+                <ui:Toggle name="snap-ignore-backfaces" text="#wire.ignoreBackfaces" tooltip="#wire.ignoreBackfaces.tip" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

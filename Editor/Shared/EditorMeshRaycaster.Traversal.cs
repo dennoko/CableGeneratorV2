@@ -10,9 +10,11 @@ namespace CableGeneratorV2Editor
         const float kBaryEpsilon      = 1e-6f;
         const float kRayTMin          = 1e-6f;
 
+        /// <param name="cullBackfaces">true なら面の裏側（三角形を裏から見た側）には当たらない。</param>
         internal static bool RaycastBvh(
             MeshBvh bvh, Vector3 origin, Vector3 dir,
-            ref float bestT, out int hitTri, out float hitU, out float hitV)
+            ref float bestT, out int hitTri, out float hitU, out float hitV,
+            bool cullBackfaces = false)
         {
             hitTri = -1;
             hitU   = 0f;
@@ -40,7 +42,7 @@ namespace CableGeneratorV2Editor
                     for (int i = node.leftFirst; i < node.leftFirst + node.count; i++)
                     {
                         int tri = bvh.triOrder[i];
-                        if (IntersectTriangle(bvh, origin, dir, tri, out float t, out float u, out float v)
+                        if (IntersectTriangle(bvh, origin, dir, tri, cullBackfaces, out float t, out float u, out float v)
                             && t < bestT)
                         {
                             bestT  = t;
@@ -85,7 +87,7 @@ namespace CableGeneratorV2Editor
         }
 
         static bool IntersectTriangle(
-            MeshBvh bvh, Vector3 origin, Vector3 dir, int tri,
+            MeshBvh bvh, Vector3 origin, Vector3 dir, int tri, bool cullBackfaces,
             out float t, out float u, out float v)
         {
             t = 0f; u = 0f; v = 0f;
@@ -100,6 +102,9 @@ namespace CableGeneratorV2Editor
             Vector3 p   = Vector3.Cross(dir, e2);
             float   det = Vector3.Dot(e1, p);
             if (Mathf.Abs(det) < kDetEpsilon) return false;
+            // det = -dot(dir, cross(e1, e2))。Unity の表面（時計回り）の法線は cross(e1, e2) なので、det < 0 が裏から当たった場合。
+            // ローカル空間で比べるので、負のスケール（ミラー）でも描画上の表裏と一致する。
+            if (cullBackfaces && det < 0f) return false;
 
             float invDet = 1f / det;
             Vector3 s = origin - v0;

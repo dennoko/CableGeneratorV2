@@ -1,0 +1,3 @@
+# テストで書き出したメッシュ・FBX（CableMeshExporter の出力先）
+/BakedMesh/
+/BakedMesh.meta

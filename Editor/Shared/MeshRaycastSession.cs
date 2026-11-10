@@ -25,9 +25,13 @@ namespace CableGeneratorV2Editor
         readonly LayerMask activeMask;
         readonly Transform excludeTransform;
 
-        public MeshRaycastSession(LayerMask mask, GameObject excludeRoot)
+        /// <summary>true なら面の裏側には当たらない（メッシュ・MeshCollider とも）。セッション中に変えてもよい。</summary>
+        public bool IgnoreBackfaces { get; set; }
+
+        public MeshRaycastSession(LayerMask mask, GameObject excludeRoot, bool ignoreBackfaces = false)
         {
             activeMask = mask;
+            IgnoreBackfaces = ignoreBackfaces;
             excludeTransform = excludeRoot != null ? excludeRoot.transform : null;
 
             // Prefab モード中はそのステージ内、通常時はメインステージ（開いている全シーン）から探す。
@@ -136,7 +140,7 @@ namespace CableGeneratorV2Editor
                 Vector3 localOrigin = cand.worldToLocal.MultiplyPoint3x4(worldRay.origin);
                 Vector3 localDir    = cand.worldToLocal.MultiplyVector(worldRay.direction);
 
-                if (EditorMeshRaycaster.RaycastBvh(bvh, localOrigin, localDir, ref bestT, out int tri, out float u, out float v))
+                if (EditorMeshRaycaster.RaycastBvh(bvh, localOrigin, localDir, ref bestT, out int tri, out float u, out float v, IgnoreBackfaces))
                 {
                     bestCand = c;
                     bestTri  = tri;
@@ -158,7 +162,20 @@ namespace CableGeneratorV2Editor
             }
 
             // Physics.Raycast フォールバック（BVH より手前にコライダーがある場合、または MeshFilter なしオブジェクト対応）
-            if (Physics.Raycast(worldRay, out RaycastHit physHit, bestT, activeMask.value, QueryTriggerInteraction.Ignore))
+            // MeshCollider の裏面もメッシュと同じ扱いにする（プロジェクトの設定は呼んだ後に戻す）
+            bool projectHitsBackfaces = Physics.queriesHitBackfaces;
+            bool physHitFound;
+            RaycastHit physHit;
+            try
+            {
+                Physics.queriesHitBackfaces = !IgnoreBackfaces;
+                physHitFound = Physics.Raycast(worldRay, out physHit, bestT, activeMask.value, QueryTriggerInteraction.Ignore);
+            }
+            finally
+            {
+                Physics.queriesHitBackfaces = projectHitsBackfaces;
+            }
+            if (physHitFound)
             {
                 bool isExcluded = !IsPickableGameObject(physHit.collider.gameObject)
                                || physHit.collider.GetComponentInParent<CableGenerator>() != null

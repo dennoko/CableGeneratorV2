@@ -55,6 +55,7 @@ namespace CableGeneratorV2Editor
             Event e = Event.current;
             var settings = CableToolSettings.instance;
             s_drawSession ??= new MeshRaycastSession(settings.hitLayerMask, gen.gameObject);
+            s_drawSession.IgnoreBackfaces = settings.ignoreBackfaces;   // 作業中に詳細で切り替えてもすぐ効く
 
             // カーソルヒントはイベントを消費する前に呼んでカーソルに追従させる
             CableSceneGuide.Show(GuideText(gen));

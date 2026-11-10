@@ -59,6 +59,7 @@ namespace CableGeneratorV2Editor
 
             Event e = Event.current;
             s_pickSession ??= new MeshRaycastSession(CableToolSettings.instance.hitLayerMask, gen.gameObject);
+            s_pickSession.IgnoreBackfaces = CableToolSettings.instance.ignoreBackfaces;   // 作業中に詳細で切り替えてもすぐ効く
 
             if (e.type == EventType.MouseMove)
             {

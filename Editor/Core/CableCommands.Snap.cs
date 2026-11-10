@@ -33,7 +33,7 @@ namespace CableGeneratorV2Editor
             var failed = new List<int>();
 
             // 2点配線・なぞり描画のセッションとは独立した一時セッション
-            using (var session = new MeshRaycastSession(s.snapLayerMask, cableGen.gameObject))
+            using (var session = new MeshRaycastSession(s.snapLayerMask, cableGen.gameObject, s.snapIgnoreBackfaces))
             {
                 foreach (int index in targetIndices)
                 {

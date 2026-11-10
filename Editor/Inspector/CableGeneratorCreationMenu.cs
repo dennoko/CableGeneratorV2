@@ -56,8 +56,15 @@ namespace CableGeneratorV2Editor
             return AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
         }
 
+        // 同梱の Profile_sample/HeavyDutyCableProfile.asset。サンプルが複数あるので、新しいケーブルは必ずこれから始める
+        private const string DefaultProfileGuid = "280def67a89595f479fc64d2b700d128";
+
         public static CableProfile FindOrCreateDefaultProfile()
         {
+            string defaultPath = AssetDatabase.GUIDToAssetPath(DefaultProfileGuid);
+            var bundled = string.IsNullOrEmpty(defaultPath) ? null : AssetDatabase.LoadAssetAtPath<CableProfile>(defaultPath);
+            if (bundled != null) return bundled;
+
             string[] guids = AssetDatabase.FindAssets("t:CableGeneratorV2Runtime.CableProfile");
             if (guids.Length > 0)
             {

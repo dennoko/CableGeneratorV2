@@ -37,6 +37,7 @@ namespace CableGeneratorV2Editor
             BindLayerMask(Q<LayerMaskField>("hit-layers"), () => s.hitLayerMask, v => s.hitLayerMask = v);
             DennokoBlockUI.BindDetails(Q("method-details"));
             _methodChips = Q("method-chips");
+            BindSetting(Q<Toggle>("ignore-backfaces"), () => s.ignoreBackfaces, v => s.ignoreBackfaces = v);
             BindSetting(Q<Slider>("pick-tangent"), () => s.pickTangentScale, v =>
             {
                 s.pickTangentScale = v;
@@ -79,6 +80,7 @@ namespace CableGeneratorV2Editor
             BindSetting(Q<FloatField>("snap-offset"), () => s.snapSurfaceOffset, v => s.snapSurfaceOffset = Mathf.Max(0f, v));
             BindSetting(Q<Toggle>("snap-local"), () => s.snapDirectionIsLocal, v => s.snapDirectionIsLocal = v);
             BindLayerMask(Q<LayerMaskField>("snap-layers"), () => s.snapLayerMask, v => s.snapLayerMask = v);
+            BindSetting(Q<Toggle>("snap-ignore-backfaces"), () => s.snapIgnoreBackfaces, v => s.snapIgnoreBackfaces = v);
         }
 
         public override void Refresh()
@@ -118,12 +120,13 @@ namespace CableGeneratorV2Editor
         /// <summary>閉じている「詳細」に、初期値から変えた値だけチップで出す（スキル B2）。</summary>
         private void RefreshChips(CableToolSettings s)
         {
-            string key = $"{English}|{s.pickTangentScale}|{s.drawSurfaceOffset}|{s.drawSimplifyTol}|{s.drawMinPixelSpacing}|{s.drawKnotMode}|" +
+            string key = $"{English}|{s.pickTangentScale}|{s.drawSurfaceOffset}|{s.drawSimplifyTol}|{s.drawMinPixelSpacing}|{s.drawKnotMode}|{s.ignoreBackfaces}|{s.snapIgnoreBackfaces}|" +
                          $"{s.divisionCount}|{s.addedKnotMode}|{s.snapSurfaceOffset}|{s.snapDirectionIsLocal}|{s.snapLayerMask}";
             if (key == _chipsKey) return;
             _chipsKey = key;
 
             _methodChips.Clear();
+            if (!s.ignoreBackfaces) _methodChips.Add(DennokoBlockUI.Chip(null, Tr("wire.backfaces.chip"), Tr("wire.ignoreBackfaces.tip")));
             if (!Mathf.Approximately(s.pickTangentScale, 1f)) _methodChips.Add(DennokoBlockUI.Chip(null, $"×{s.pickTangentScale:0.##}", Tr("wire.tangentScale")));
             if (!Mathf.Approximately(s.drawSurfaceOffset, 0.003f)) _methodChips.Add(DennokoBlockUI.Chip(null, $"{s.drawSurfaceOffset * 1000f:0.#}mm", Tr("wire.surfaceOffset")));
             if (s.drawKnotMode != 0) _methodChips.Add(DennokoBlockUI.Chip(null, Tr("mode.smooth"), Tr("wire.drawKnotMode")));
@@ -134,6 +137,7 @@ namespace CableGeneratorV2Editor
 
             _snapChips.Clear();
             if (!Mathf.Approximately(s.snapSurfaceOffset, 0.003f)) _snapChips.Add(DennokoBlockUI.Chip(null, $"{s.snapSurfaceOffset * 1000f:0.#}mm", Tr("wire.surfaceOffset")));
+            if (!s.snapIgnoreBackfaces) _snapChips.Add(DennokoBlockUI.Chip(null, Tr("wire.backfaces.chip"), Tr("wire.ignoreBackfaces.tip")));
             if (s.snapDirectionIsLocal) _snapChips.Add(DennokoBlockUI.Chip(null, Tr("wire.dir.local"), Tr("wire.dir.local.tip")));
         }
 

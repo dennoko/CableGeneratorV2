@@ -171,5 +171,42 @@ namespace CableGeneratorV2Tests
             using (var session = new MeshRaycastSession(~0, go))
                 Assert.IsFalse(session.Raycast(DownRayAtLocal(0.4f, 0.3f), out _, 10f));
         }
+
+        /// <summary>四角形ローカル座標 (x, 0, z) の真下から上向きのレイ（四角形を裏から見る）</summary>
+        static Ray UpRayAtLocal(float x, float z)
+        {
+            Ray down = DownRayAtLocal(x, z);
+            return new Ray(down.origin + Vector3.down * 10f, Vector3.up);
+        }
+
+        [Test]
+        public void Session_IgnoreBackfaces_SkipsFacesSeenFromBehind()
+        {
+            var go = CreateTransformedObject("BackfaceQuad");
+            go.AddComponent<MeshFilter>().sharedMesh = CreateQuadMesh();
+            go.AddComponent<MeshRenderer>();
+
+            using (var session = new MeshRaycastSession(~0, null, ignoreBackfaces: true))
+            {
+                Assert.IsTrue(session.Raycast(DownRayAtLocal(0.4f, 0.3f), out _, 10f), "表からは当たること");
+                Assert.IsFalse(session.Raycast(UpRayAtLocal(0.4f, 0.3f), out _, 10f), "裏からは当たらないこと");
+
+                session.IgnoreBackfaces = false;
+                Assert.IsTrue(session.Raycast(UpRayAtLocal(0.4f, 0.3f), out _, 10f), "オフなら裏からも当たること");
+            }
+        }
+
+        [Test]
+        public void IgnoreBackfaces_KeepsVisibleSideOnMirroredTransform()
+        {
+            // 負のスケールでも、描画される表（法線の向き）から当たること
+            var matrix = Matrix4x4.TRS(kOrigin, Quaternion.identity, new Vector3(-1f, 1f, 1f));
+            var mesh = CreateQuadMesh();
+            Ray fromAbove = new Ray(kOrigin + new Vector3(0.1f, 5f, 0.2f), Vector3.down);
+            Ray fromBelow = new Ray(kOrigin + new Vector3(0.1f, -5f, 0.2f), Vector3.up);
+
+            Assert.IsTrue(EditorMeshRaycaster.RaycastSingleMesh(mesh, matrix, fromAbove, out _, ignoreBackfaces: true));
+            Assert.IsFalse(EditorMeshRaycaster.RaycastSingleMesh(mesh, matrix, fromBelow, out _, ignoreBackfaces: true));
+        }
     }
 }
