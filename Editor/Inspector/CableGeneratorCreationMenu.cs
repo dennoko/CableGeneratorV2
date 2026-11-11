@@ -45,14 +45,33 @@ namespace CableGeneratorV2Editor
             return go;
         }
 
+        private const string DefaultMaterialGuid = "408d539b08c195c4d8d0cc3f14729fdc";
+        private const string DefaultMaterialPath = "Assets/dennokoworks/CableGeneratorV2/Material/cable_default.mat";
+
         public static Material FindOrCreateDefaultMaterial()
         {
-            string[] matGuids = AssetDatabase.FindAssets("dennokoworks_UCG_default t:Material");
+            string defaultPath = AssetDatabase.GUIDToAssetPath(DefaultMaterialGuid);
+            var bundled = string.IsNullOrEmpty(defaultPath) ? null : AssetDatabase.LoadAssetAtPath<Material>(defaultPath);
+            if (bundled != null) return bundled;
+
+            var byPath = AssetDatabase.LoadAssetAtPath<Material>(DefaultMaterialPath);
+            if (byPath != null) return byPath;
+
+            string[] matGuids = AssetDatabase.FindAssets("cable_default t:Material");
             if (matGuids.Length > 0)
             {
                 var m = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(matGuids[0]));
                 if (m != null) return m;
             }
+
+            // 旧 V1 用マテリアルのフォールバック
+            string[] legacyGuids = AssetDatabase.FindAssets("dennokoworks_UCG_default t:Material");
+            if (legacyGuids.Length > 0)
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(legacyGuids[0]));
+                if (m != null) return m;
+            }
+
             return AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
         }
 
