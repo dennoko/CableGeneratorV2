@@ -4,3 +4,5 @@
 # おまけ3Dモデル
 /Model/
 /Model.meta
+# 動作テスト用プロファイル
+/Profile_sample 1/
