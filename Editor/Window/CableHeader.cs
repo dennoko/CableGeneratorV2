@@ -113,7 +113,8 @@ namespace CableGeneratorV2Editor
         {
             if (_version == null) return;
             var r = CableGeneratorVersion.LoadResult();
-            string text = "v" + r.LocalVersion;
+            string v = r.LocalVersion ?? "";
+            string text = (v.StartsWith("v", System.StringComparison.OrdinalIgnoreCase) ? "" : "v") + v;
             bool update = false, error = false;
             string tooltip = null;
             switch (r.State)

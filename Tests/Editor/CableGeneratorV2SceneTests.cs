@@ -100,12 +100,15 @@ namespace CableGeneratorV2Tests
         }
 
         [Test]
-        public void GeneratedMesh_IsTransient_AndNotSharedWithDuplicate()
+        public void GeneratedMesh_IsSavedToSceneAndBuild_AndNotSharedWithDuplicate()
         {
             var gen = CreateCable(3);
             Mesh mesh = gen.GeneratedMesh;
             Assert.IsNotNull(mesh);
-            Assert.IsTrue((mesh.hideFlags & HideFlags.DontSaveInEditor) != 0, "生成メッシュはシーンに保存されないこと");
+            Assert.AreSame(mesh, gen.GetComponent<MeshFilter>().sharedMesh);
+            Assert.IsTrue((mesh.hideFlags & HideFlags.DontSaveInEditor) == 0, "生成メッシュはシーンに保存されること");
+            Assert.IsTrue((mesh.hideFlags & HideFlags.DontSaveInBuild) == 0, "生成メッシュはビルドに含まれること");
+            Assert.IsTrue(CableObjectUtility.IsSavedToSceneAndBuild(mesh));
 
             // 複製直後は同じメッシュを参照するが、複製側は所有者でないため自分用のメッシュを確保すること
             var cloneGo = Object.Instantiate(gen.gameObject);
@@ -123,7 +126,135 @@ namespace CableGeneratorV2Tests
         }
 
         [Test]
-        public void Lod_IsBuiltAsTransientHierarchy_AndRemovedWhenDisabled()
+        public void LegacyTransientMesh_IsMigratedToSavedMesh()
+        {
+            var gen = CreateCable(3);
+            var mf = gen.GetComponent<MeshFilter>();
+
+            // 旧バージョンが作った「保存しない」フラグ + InstanceID 入りの名前のメッシュ
+            var legacy = new Mesh
+            {
+                name = "CableMesh_LOD0_" + gen.GetInstanceID(),
+                hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
+            };
+            created.Add(legacy);
+            mf.sharedMesh = legacy;
+
+            gen.RebuildMesh();
+            Assert.AreSame(legacy, gen.GeneratedMesh, "旧メッシュは作り直さず再利用すること");
+            Assert.IsTrue(CableObjectUtility.IsSavedToSceneAndBuild(legacy), "保存対象へ移行されること");
+            Assert.Greater(legacy.vertexCount, 0);
+        }
+
+        [Test]
+        public void UserAssignedMesh_IsNeverOverwritten()
+        {
+            var gen = CreateCable(3);
+            var mf = gen.GetComponent<MeshFilter>();
+
+            var userMesh = new Mesh { name = "UserMesh" };
+            created.Add(userMesh);
+            userMesh.vertices = new[] { Vector3.zero, Vector3.up, Vector3.right };
+            userMesh.triangles = new[] { 0, 1, 2 };
+            mf.sharedMesh = userMesh;
+
+            Assert.IsNull(gen.GeneratedMesh, "ユーザーが割り当てたメッシュは生成メッシュとして扱わない");
+            gen.RebuildMesh();
+            Assert.AreEqual(3, userMesh.vertexCount, "ユーザーのメッシュを書き換えないこと");
+            Assert.IsNotNull(gen.GeneratedMesh);
+            Assert.AreNotSame(userMesh, gen.GeneratedMesh);
+        }
+
+        [Test]
+        public void RemovingComponent_KeepsGeneratedMeshAndLods()
+        {
+            var gen = CreateCable(4);
+            gen.enableLod = true;
+            gen.RebuildMesh();
+
+            GameObject go = gen.gameObject;
+            var mf = go.GetComponent<MeshFilter>();
+            Mesh mesh = gen.GeneratedMesh;
+            Mesh lod1 = gen.GeneratedLod1Mesh;
+            Assert.IsNotNull(mesh);
+            Assert.IsNotNull(lod1);
+
+            // スクリプトだけが取り除かれても（ビルド時の除去など）見た目は残ること
+            Object.DestroyImmediate(gen);
+
+            Assert.IsTrue(mesh != null, "メッシュを破棄しないこと");
+            Assert.AreSame(mesh, mf.sharedMesh, "MeshFilter の参照を外さないこと");
+            Assert.Greater(mesh.vertexCount, 0);
+
+            Transform lod1Child = go.transform.Find(CableGenerator.kLodRootName + "/LOD1");
+            Assert.IsNotNull(lod1Child);
+            Assert.AreSame(lod1, lod1Child.GetComponent<MeshFilter>().sharedMesh);
+            Assert.IsNotNull(go.GetComponent<LODGroup>());
+        }
+
+        /// <summary>
+        /// ベイクなしでアップロードできることの根拠：生成メッシュ（LOD 含む）がシーンファイルに保存され、
+        /// 開き直したあとも同じメッシュを再利用すること。
+        /// </summary>
+        [Test]
+        public void GeneratedMeshes_SurviveSceneSaveAndReload_AndAreReused()
+        {
+            if (string.IsNullOrEmpty(UnityEngine.SceneManagement.SceneManager.GetActiveScene().path))
+                Assert.Ignore("未保存（Untitled）のシーンを開いている間は、シーンを追加で作れないためスキップ");
+
+            CableMeshExporter.EnsureFolderExists(kTempFolder);
+            string scenePath = kTempFolder + "/test_scene.unity";
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
+                UnityEditor.SceneManagement.NewSceneSetup.EmptyScene,
+                UnityEditor.SceneManagement.NewSceneMode.Additive);
+            try
+            {
+                var gen = CreateCable(4);
+                gen.enableLod = true;
+                gen.RebuildMesh();
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(gen.gameObject, scene);
+                int vertexCount = gen.GeneratedMesh.vertexCount;
+                int lod1VertexCount = gen.GeneratedLod1Mesh.vertexCount;
+                Assert.Greater(vertexCount, 0);
+
+                Assert.IsTrue(UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath));
+                UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
+                scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(
+                    scenePath, UnityEditor.SceneManagement.OpenSceneMode.Additive);
+
+                CableGenerator loaded = null;
+                foreach (var root in scene.GetRootGameObjects())
+                    if (loaded == null) loaded = root.GetComponent<CableGenerator>();
+                Assert.IsNotNull(loaded);
+
+                // 再生成が走る前の、シーンファイルから読み込まれただけの状態
+                var mf = loaded.GetComponent<MeshFilter>();
+                Mesh saved = mf.sharedMesh;
+                Assert.IsTrue(saved != null, "メッシュがシーンに保存されていること");
+                Assert.AreEqual(vertexCount, saved.vertexCount);
+
+                Transform lod1 = loaded.transform.Find(CableGenerator.kLodRootName + "/LOD1");
+                Assert.IsNotNull(lod1, "LOD 階層がシーンに保存されていること");
+                Mesh savedLod1 = lod1.GetComponent<MeshFilter>().sharedMesh;
+                Assert.IsTrue(savedLod1 != null, "LOD メッシュがシーンに保存されていること");
+                Assert.AreEqual(lod1VertexCount, savedLod1.vertexCount);
+
+                // 読み込んだメッシュをそのまま使い回す（開くたびに作り直さない）
+                loaded.RebuildMesh();
+                Assert.AreSame(saved, mf.sharedMesh);
+                Assert.AreSame(saved, loaded.GeneratedMesh);
+                Assert.AreSame(savedLod1, loaded.GeneratedLod1Mesh);
+                Assert.AreEqual(vertexCount, saved.vertexCount);
+                Assert.IsFalse(scene.isDirty, "内容が変わっていなければ、開いただけでシーンを未保存扱いにしないこと");
+            }
+            finally
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        [Test]
+        public void Lod_IsBuiltAsSavedHierarchy_AndRemovedWhenDisabled()
         {
             var gen = CreateCable(4);
             gen.enableLod = true;
@@ -131,9 +262,12 @@ namespace CableGeneratorV2Tests
 
             Transform lodRoot = gen.transform.Find(CableGenerator.kLodRootName);
             Assert.IsNotNull(lodRoot);
-            Assert.IsTrue((lodRoot.gameObject.hideFlags & HideFlags.DontSaveInEditor) != 0);
+            Assert.IsTrue(CableObjectUtility.IsSavedToSceneAndBuild(lodRoot.gameObject), "LOD 階層はシーン・ビルドに保存されること");
+            Assert.IsTrue(CableObjectUtility.IsSavedToSceneAndBuild(lodRoot.Find("LOD1").gameObject));
             Assert.IsNotNull(gen.GeneratedLod1Mesh);
             Assert.IsNotNull(gen.GeneratedLod2Mesh);
+            Assert.IsTrue(CableObjectUtility.IsSavedToSceneAndBuild(gen.GeneratedLod1Mesh));
+            Assert.IsTrue(CableObjectUtility.IsSavedToSceneAndBuild(gen.GeneratedLod2Mesh));
             Assert.Greater(gen.GeneratedLod1Mesh.vertexCount, 0);
             Assert.IsTrue(gen.GetComponent<MeshRenderer>().enabled, "LOD0 はルート自身の Renderer");
             Assert.IsNotNull(gen.GetComponent<LODGroup>());

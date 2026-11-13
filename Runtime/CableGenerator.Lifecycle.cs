@@ -35,24 +35,44 @@ namespace CableGeneratorV2Runtime
 
         void OnDestroy()
         {
-            DestroyOwnedMesh(GetComponent<MeshFilter>(), 0);
-            DestroyOwnedMesh(FindLodFilter(1), 1);
-            DestroyOwnedMesh(FindLodFilter(2), 2);
+            // ここではメッシュを破棄せず、MeshFilter の参照も外さない。
+            // コンポーネントだけが外された場合（手動での削除・ビルド時のスクリプト除去など）に、
+            // シーンに保存されたケーブルの見た目が消えないようにするため。
+            var mf0 = GetComponent<MeshFilter>();
+            var mf1 = FindLodFilter(1);
+            var mf2 = FindLodFilter(2);
+            Mesh m0 = FindOwnedMesh(mf0, 0, claim: false);
+            Mesh m1 = FindOwnedMesh(mf1, 1, claim: false);
+            Mesh m2 = FindOwnedMesh(mf2, 2, claim: false);
+            ReleaseMeshOwnership(m0);
+            ReleaseMeshOwnership(m1);
+            ReleaseMeshOwnership(m2);
 
 #if UNITY_EDITOR
-            if (!Application.isPlaying)
+            // GameObject ごと破棄されたかどうかは OnDestroy の時点では判別できないため、次のエディタ更新で確認する。
+            // （ランタイムでは何もしない。参照を失ったメッシュはシーンのアンロード時に回収される）
+            Transform tf = transform;
+            UnityEditor.EditorApplication.delayCall += () =>
             {
-                // コンポーネントだけが外された場合は、残った一時 LOD 階層と LODGroup を片付ける
-                // （GameObject ごと破棄される場合は tf が null になるので何もしない）
-                Transform tf = transform;
-                UnityEditor.EditorApplication.delayCall += () =>
-                {
-                    if (tf == null || tf.GetComponent<CableGenerator>() != null) return;
-                    RemoveLodStructure(tf);
-                };
-            }
+                // MeshFilter ごと消えていれば、メッシュはどこからも参照されないので解放する
+                DestroyIfOrphaned(mf0, m0);
+                DestroyIfOrphaned(mf1, m1);
+                DestroyIfOrphaned(mf2, m2);
+
+                // コンポーネントだけが外された場合は、残った LOD 階層を手で編集できるようにする
+                if (tf == null || tf.GetComponent<CableGenerator>() != null) return;
+                UnlockLodStructure(tf);
+            };
 #endif
         }
+
+#if UNITY_EDITOR
+        static void DestroyIfOrphaned(MeshFilter mf, Mesh m)
+        {
+            if (m == null || mf != null) return;
+            CableObjectUtility.Destroy(m);
+        }
+#endif
 
         void OnValidate()
         {

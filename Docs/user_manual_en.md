@@ -262,6 +262,13 @@ CableGenerator V2 includes 7 pre-built profile assets (in the `Profile_sample` f
   - Attached models (connectors, etc.) are included in the prefab.
   - **Place in scene**: Places an instance of the saved prefab at the source cable's position.
 
+#### Upload Directly Without Exporting
+Generated meshes (including LOD1, LOD2, and the `LODGroup` when LOD is enabled) are serialized directly into the scene file. Therefore, you can upload your VRChat world without performing any export (bake) steps. If you want to modify cable shapes after uploading, simply edit the cables directly in your scene.
+
+- The `.unity` scene file size will increase depending on the number of cables and vertices. If this is a concern, use the export options below to externalize meshes as standalone files.
+- If a cable shape changes (for example, due to edits to a shared CableProfile asset), the scene may be marked unsaved when opened. Please save the scene before uploading.
+- Even if you remove the `CableGenerator` component, the generated mesh at that moment remains intact on the GameObject.
+
 #### Non-Destructive Baking Workflow
 Upon export, the original `CableGenerator` object is deactivated, tagged with `EditorOnly`, and safely preserved in the scene hierarchy.  
 If you need to make changes, simply delete the exported object, reactivate the original cable, and continue editing seamlessly.

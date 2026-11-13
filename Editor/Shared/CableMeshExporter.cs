@@ -45,7 +45,7 @@ namespace CableGeneratorV2Editor
 
             Mesh copy = Object.Instantiate(sourceMesh);
             copy.name = actualName;
-            // 生成メッシュは「シーンに保存しない」フラグ付きなので、アセット化する前に必ず外す
+            // 旧バージョンの生成メッシュは「シーンに保存しない」フラグ付きのことがあるので、アセット化する前に必ず外す
             copy.hideFlags = HideFlags.None;
 
             AssetDatabase.CreateAsset(copy, path);

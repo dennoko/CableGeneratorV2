@@ -7,10 +7,12 @@ namespace CableGeneratorV2Runtime
     /// スプラインと断面プロファイルからケーブルメッシュを生成するコンポーネント。
     ///
     /// 【ライフサイクル設計】
-    /// ・生成物（メッシュ・LOD 子階層）はすべて「シーンに保存しない一時オブジェクト」として扱い、
-    ///   保存されるのは入力（スプライン・設定）のみ。生成物はいつでも入力から再生成できる。
-    /// ・生成メッシュは MeshFilter の参照そのものを正とし、名前に所有者の InstanceID を埋めて所有判定する。
-    ///   C# 側のフィールドにキャッシュしないため、ドメインリロードで参照を失っても再利用・再生成が破綻しない。
+    /// ・生成物（メッシュ・LOD 子階層）は入力（スプライン・設定）と一緒にシーンへ直接シリアライズされる。
+    ///   そのためベイクしなくてもワールドのビルドに含まれ、このスクリプトが動かない環境でも表示される。
+    ///   生成物はいつでも入力から再生成でき、シーンを開いたときにも作り直して保存済みの内容と照合する。
+    /// ・生成メッシュは MeshFilter の参照そのものを正とし、所有者は実行時の台帳で判定する（複製時の共有防止）。
+    ///   C# 側のフィールドにキャッシュしないため、ドメインリロードで台帳を失っても再利用・再生成が破綻しない。
+    /// ・コンポーネントが外されても生成物は消さない（その時点の形状のまま残る）。
     /// ・GameObject / コンポーネントの生成・破棄（構造変更）は OnValidate / OnEnable / OnGUI 中に行わず、
     ///   EditorApplication.delayCall で 1 回にまとめて実行する。
     /// </summary>
@@ -174,11 +176,13 @@ namespace CableGeneratorV2Runtime
             if (!TryGetProfileSource(out var src))
             {
                 mesh0.Clear();
+                ConfirmSavedContent(mf, mesh0);
                 ClearLodMeshes();
                 return;
             }
 
             BuildTierMesh(mesh0, 0, src, 0, null);
+            ConfirmSavedContent(mf, mesh0);
 
             if (!enableLod) return;
 
